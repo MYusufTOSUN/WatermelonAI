@@ -15,8 +15,9 @@ Koç & Akbalık (2025) referans alınmış, Late Fusion DNN tabanlı mimari. 19 
 | Akustik 120-D feature extractor (Koç & Akbalık) | ✅ | librosa-uyumlu |
 | Multimodal fusion DNN | ✅ | 78 KB FP16 TFLite, 4-input |
 | LOWO 2-sınıf RFC | ✅ | %61.5 doğruluk |
-| Flutter Android APK | ✅ | 80 MB, multimodal canlı |
+| Flutter Android APK | ✅ | ~87 MB, multimodal canlı (v15) |
 | 3-adım sihirbazlı UX | ✅ | Foto → Ses → Dokunuş |
+| Vi-Liquid aktif haptik | ✅ | Titreşim + SRR + f₂ + late fusion |
 | MRD-YOLO mobile TFLite | ⚠️ | Backend'de PT, mobile entegrasyon gelecek çalışma |
 
 ---
@@ -67,7 +68,7 @@ Tüm öznitelik çıkarımı Dart tarafında, internet bağlantısı **yok**:
 - **HSV / Sobel / Laplacian**: `image` paketi
 - **Accelerometer**: `sensors_plus` 100 Hz
 
-APK indirme: [`releases/watermelon_ai_v2_multimodal.apk`](releases/watermelon_ai_v2_multimodal.apk) (~80 MB)
+APK indirme: GitHub **Releases** sekmesinden en güncel sürümü (v15) indirin (~87 MB). APK dosyaları repo boyutunu şişirmemek için sürüm varlığı (release asset) olarak yayınlanır.
 
 ---
 
@@ -110,7 +111,8 @@ Detaylı sonuçlar: [`data/models/binary_lowo_results.json`](data/models/binary_
 ## Teslim Belgeleri
 
 - 📄 **Teknik Rapor**: [`docs/REPORT.md`](docs/REPORT.md)
-- 📱 **APK**: [`releases/watermelon_ai_v2_multimodal.apk`](releases/watermelon_ai_v2_multimodal.apk)
+- 🔍 **Pipeline Denetimi**: [`docs/PIPELINE_AUDIT.md`](docs/PIPELINE_AUDIT.md)
+- 📱 **APK**: GitHub Releases sekmesi (v15)
 - 🗺️ **Yol Haritası**: [`ROADMAP.md`](ROADMAP.md)
 
 ---
