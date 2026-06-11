@@ -1,0 +1,77 @@
+# ============================================================
+#  Karpuz AI — .gitignore
+# ============================================================
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.eggs/
+dist/
+sdist/
+wheels/
+.installed.cfg
+
+# ----- Virtual environments -----
+env/
+venv/
+.venv/
+.env
+
+# ----- IDE / editor -----
+.vs/
+.vscode/
+.idea/
+*.sqlite3
+*.iml
+
+# ----- OS -----
+.DS_Store
+Thumbs.db
+
+# ----- AI assistant config (yerel) -----
+.claude/
+.anthropic/
+.claudeignore
+.clauderules
+
+# ============================================================
+#  Buyuk ham veri & harici modeller — GitHub'a GITMEZ
+#  (README'de indirme baglantisi/kaynagi belirtilir)
+# ============================================================
+dataset/
+watermelon ripeness grading.v7i.multiclass/
+model/
+mrd_yolo_repo/
+
+# Egitim cache'i (yeniden uretilebilir)
+data/raw/
+data/processed/
+data/feedback/
+data/mrd_results/
+
+# Egitilmis hafif modeller TUTULUR (data/models/ — joblib/tflite/json)
+!data/models/
+
+# ----- APK ciktilari (GitHub Releases'a yuklenir, repoya degil) -----
+releases/*.apk
+
+# ============================================================
+#  Flutter / Dart
+# ============================================================
+flutter_app/.dart_tool/
+flutter_app/.flutter-plugins
+flutter_app/.flutter-plugins-dependencies
+flutter_app/.pub-cache/
+flutter_app/.pub/
+flutter_app/build/
+flutter_app/android/local.properties
+flutter_app/android/.gradle/
+flutter_app/android/app/release/
+flutter_app/ios/Flutter/Generated.xcconfig
+flutter_app/ios/Pods/
+flutter_app/.metadata

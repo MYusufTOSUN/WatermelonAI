@@ -1,0 +1,35 @@
+# ============================================
+# Watermelon Ripeness Detection System
+# Bağımlılık Dosyası
+# ============================================
+
+# --- Temel Bilimsel Hesaplama ---
+numpy>=1.24.0
+scipy>=1.10.0
+pandas>=2.0.0
+
+# --- Ses & Sinyal İşleme ---
+librosa>=0.10.0
+soundfile>=0.12.0
+
+# --- Makine Öğrenmesi ---
+scikit-learn>=1.3.0
+joblib>=1.3.0
+
+# --- Derin Ogrenme & Goruntu Isleme ---
+tensorflow>=2.13.0
+# tensorflow-lite  # TFLite runtime (mobil deploy icin)
+ultralytics>=8.0.0  # YOLOv11 destegi (MRD-YOLO modifiye ultralytics kullanir)
+opencv-python>=4.8.0
+torch>=2.0.0
+timm>=0.9.0         # PyTorch Image Models (MRD-YOLO bagimliligi)
+py-cpuinfo>=9.0.0   # CPU bilgisi (ultralytics bagimliligi)
+
+# --- Veri Görselleştirme ---
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# --- Yardımcı ---
+tqdm>=4.65.0
+pyyaml>=6.0
+

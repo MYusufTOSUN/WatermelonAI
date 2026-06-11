@@ -1,0 +1,89 @@
+{
+  "samples": [
+    {
+      "asset": "assets/samples/wm2_brix9.7.wav",
+      "watermelon_id": 2,
+      "brix": 9.7,
+      "label": 0,
+      "label_name": "Olgunlaşmamış"
+    },
+    {
+      "asset": "assets/samples/wm14_brix9.4.wav",
+      "watermelon_id": 14,
+      "brix": 9.4,
+      "label": 0,
+      "label_name": "Olgunlaşmamış"
+    },
+    {
+      "asset": "assets/samples/wm19_brix9.6.wav",
+      "watermelon_id": 19,
+      "brix": 9.6,
+      "label": 0,
+      "label_name": "Olgunlaşmamış"
+    },
+    {
+      "asset": "assets/samples/wm17_brix8.7.wav",
+      "watermelon_id": 17,
+      "brix": 8.7,
+      "label": 0,
+      "label_name": "Olgunlaşmamış"
+    },
+    {
+      "asset": "assets/samples/wm15_brix9.4.wav",
+      "watermelon_id": 15,
+      "brix": 9.4,
+      "label": 0,
+      "label_name": "Olgunlaşmamış"
+    },
+    {
+      "asset": "assets/samples/wm1_brix10.5.wav",
+      "watermelon_id": 1,
+      "brix": 10.5,
+      "label": 1,
+      "label_name": "Olgun"
+    },
+    {
+      "asset": "assets/samples/wm9_brix11.0.wav",
+      "watermelon_id": 9,
+      "brix": 11.0,
+      "label": 1,
+      "label_name": "Olgun"
+    },
+    {
+      "asset": "assets/samples/wm16_brix10.2.wav",
+      "watermelon_id": 16,
+      "brix": 10.2,
+      "label": 1,
+      "label_name": "Olgun"
+    },
+    {
+      "asset": "assets/samples/wm11_brix10.9.wav",
+      "watermelon_id": 11,
+      "brix": 10.9,
+      "label": 1,
+      "label_name": "Olgun"
+    },
+    {
+      "asset": "assets/samples/wm4_brix10.8.wav",
+      "watermelon_id": 4,
+      "brix": 10.8,
+      "label": 1,
+      "label_name": "Olgun"
+    },
+    {
+      "asset": "assets/samples/wm12_brix11.6.wav",
+      "watermelon_id": 12,
+      "brix": 11.6,
+      "label": 2,
+      "label_name": "İçi Geçmiş"
+    },
+    {
+      "asset": "assets/samples/wm13_brix12.7.wav",
+      "watermelon_id": 13,
+      "brix": 12.7,
+      "label": 2,
+      "label_name": "İçi Geçmiş"
+    }
+  ],
+  "note": "Bundled Qilin WAV samples for on-device self-test"
+}

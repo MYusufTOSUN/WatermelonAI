@@ -1,0 +1,35 @@
+{
+  "float32": {
+    "output_path": "C:\\Users\\tosun\\Desktop\\watermelon\\data\\models\\fusion_model_fp32.tflite",
+    "quantization": "none",
+    "size_bytes": 148872,
+    "size_mb": 0.142,
+    "convert_time_s": 0.59,
+    "validation_accuracy": 1.0
+  },
+  "float16": {
+    "output_path": "C:\\Users\\tosun\\Desktop\\watermelon\\data\\models\\fusion_model_fp16.tflite",
+    "quantization": "float16",
+    "size_bytes": 85180,
+    "size_mb": 0.0812,
+    "convert_time_s": 0.63,
+    "validation_accuracy": 1.0
+  },
+  "dynamic": {
+    "output_path": "C:\\Users\\tosun\\Desktop\\watermelon\\data\\models\\fusion_model_dynamic.tflite",
+    "quantization": "dynamic",
+    "size_bytes": 56128,
+    "size_mb": 0.0535,
+    "convert_time_s": 0.63,
+    "validation_accuracy": 1.0
+  },
+  "int8": {
+    "output_path": "C:\\Users\\tosun\\Desktop\\watermelon\\data\\models\\fusion_model_int8.tflite",
+    "quantization": "dynamic",
+    "size_bytes": 56128,
+    "size_mb": 0.0535,
+    "convert_time_s": 0.66,
+    "note": "INT8 fallback to dynamic: tensorflow/lite/kernels/concatenation.cc:215 t->dims->data[d] != t0->dims->data[d] (10 != 0)Node number 9 (CONCATENATION) failed to prepare.",
+    "validation_accuracy": 1.0
+  }
+}

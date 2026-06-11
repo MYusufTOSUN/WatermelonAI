@@ -1,0 +1,5 @@
+-keep class * { *; }
+-dontwarn **
+-dontshrink
+-dontoptimize
+-dontobfuscate

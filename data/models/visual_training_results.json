@@ -1,0 +1,31 @@
+{
+  "model": "MobileNetV3-Small",
+  "timestamp": "2026-05-19T10:11:46.355237",
+  "dataset": {
+    "train": 1730,
+    "val": 370,
+    "test": 243
+  },
+  "val_accuracy": 0.7513513565063477,
+  "test_accuracy": 0.29629629850387573,
+  "epochs_trained": 25,
+  "confusion_matrix": [
+    [
+      18,
+      63,
+      0
+    ],
+    [
+      27,
+      54,
+      0
+    ],
+    [
+      9,
+      72,
+      0
+    ]
+  ],
+  "tflite_path": "C:\\Users\\tosun\\Desktop\\Ders\\26-3 VİZE\\MühTas\\watermelon\\data\\models\\visual_classifier_fp16.tflite",
+  "tflite_size_kb": 1930.7
+}
