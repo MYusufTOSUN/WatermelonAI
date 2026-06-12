@@ -101,6 +101,21 @@ Bu üç kaynak görsel sınıflandırıcı için birleştirildi; akustik + hapti
 
 **Yorum:** 2-sınıf pivotuyla RFC %61.5 doğruluk verdi. Bu, 19 karpuzluk dataset göz önüne alındığında **literatürdeki small-N akustik karpuz çalışmalarıyla tutarlı** kabul edilebilir bir baseline'dır.
 
+### 3.3.1 Yeniden Eğitim Ablasyonu (v17 sonrası)
+
+Mevcut modellerin iyileştirilip iyileştirilemeyeceğini sınamak için, cache'lenmiş 4671×146 öznitelik matrisi üzerinde kontrollü bir yeniden eğitim deneyi yürütülmüştür (`scripts/retrain_compare.py`; eski model dosyaları `data/models_backup_20260612/` altında korunmuştur):
+
+| Varyant | Doğrulama | 3-sınıf | 2-sınıf |
+|---|---|---|---|
+| RFC mevcut konfig | 19-fold LOWO | 0.572 | **0.649** |
+| RFC + class_weight=balanced | 19-fold LOWO | 0.528 | 0.599 |
+| RFC + balanced_subsample, depth=10 | 19-fold LOWO | 0.536 | 0.603 |
+| DNN baseline (mevcut mimari) | GroupKFold-5 | 0.438 | 0.511 |
+| DNN + sınıf ağırlıkları | GroupKFold-5 | 0.402 | 0.535 |
+| DNN + serve-aligned HH + sınıf ağırlıkları | GroupKFold-5 | 0.405 | 0.528 |
+
+**Bulgular:** (1) Sınıf dengeleme her iki model ailesinde de toplam doğruluğu düşürmüştür — azınlık sınıf kazanımı, çoğunluk sınıf kaybını telafi edememektedir. (2) DNN varyantları arası farklar (0.511–0.535) fold varyansının (0.32–0.74) çok altında kalmaktadır; 19 karpuzluk veri kümesinde hangi karpuzların hangi fold'a düştüğü, model seçiminden daha belirleyicidir. (3) DNN'in grouped-CV genellemesi RFC'nin LOWO genellemesinin belirgin altındadır — bu, raporun ana baseline'ı olarak RFC'nin seçimini doğrulamaktadır. Bu sonuçlara dayanarak mevcut üretim modelleri değiştirilmemiş, yeniden eğitilmiş varyantlar dağıtıma alınmamıştır.
+
 ### 3.4 Görsel Sınıflandırıcı
 
 MobileNetV3-Small Roboflow+MRD+Qilin birleşik dataset (~2000+ görsel) üzerinde eğitildi. Test val accuracy'si saha testinde ölçülmek üzere bekliyor.

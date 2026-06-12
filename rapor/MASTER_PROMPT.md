@@ -105,6 +105,20 @@ Tüm çıkarım (inference) **cihaz üzerinde** gerçekleştirilir; internet ba�
 
 > **Bilimsel ana sonuç:** RFC 2-sınıf LOWO **%61.5 doğruluk**. 19 karpuzluk veri seti ve subject leakage limitleri göz önüne alındığında literatürdeki küçük-N akustik karpuz çalışmalarıyla tutarlıdır.
 
+### Yeniden Eğitim Ablasyonu (rapora "model seçimi gerekçesi" olarak değerli)
+Mevcut modellerin iyileştirilip iyileştirilemeyeceği kontrollü deneyle sınanmıştır (eski modeller yedeklenerek):
+
+| Varyant | Doğrulama | 3-sınıf | 2-sınıf |
+|---|---|---|---|
+| RFC mevcut konfig | 19-fold LOWO | 0.572 | **0.649** |
+| RFC + class_weight=balanced | 19-fold LOWO | 0.528 | 0.599 |
+| RFC + balanced_subsample, depth=10 | 19-fold LOWO | 0.536 | 0.603 |
+| DNN baseline | GroupKFold-5 | 0.438 | 0.511 |
+| DNN + sınıf ağırlıkları | GroupKFold-5 | 0.402 | 0.535 |
+| DNN + serve-aligned HH + ağırlıklar | GroupKFold-5 | 0.405 | 0.528 |
+
+> Bulgular: sınıf dengeleme her iki ailede toplam doğruluğu DÜŞÜRMÜŞ; DNN varyant farkları fold varyansının (0.32–0.74) çok altında; DNN genellemesi RFC'nin altında → RFC'nin ana baseline seçimi deneysel olarak doğrulanmış, mevcut üretim modelleri değiştirilmemiştir. (Raporda 4. bölümde "model seçimi ve ablasyon" alt başlığı olarak kullan.)
+
 ### MobileNetV3 Görsel Sınıflandırıcı
 - 2019 görsel × 224×224 RGB üzerinde eğitildi
 - Backbone'un %60'ı trainable, fine-tune LR=1e-4
