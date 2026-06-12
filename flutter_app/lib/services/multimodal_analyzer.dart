@@ -49,10 +49,13 @@ class MultimodalAnalyzer {
     final photoBytes = await photo.readAsBytes();
     final visualVecFuture = compute(visualExtractIsolate, photoBytes);
 
-    // Audio: load WAV, trim silence, run isolate for 120+8
+    // Audio: load WAV, run isolate for 120+8.
+    // NO trimming — the backend training features were computed on the FULL
+    // recording (silence included), and trimming shifted frame statistics
+    // (delta-MFCC mean r dropped 0.998→0.792 in tool/parity_check.dart).
+    // Full 3 s costs only ~170 ms since the cepstrum fix, so parity wins.
     final audio = await AudioRecorderService.loadWavAsFloat64(audioWavPath);
-    final trimmed = AudioRecorderService.trimSilence(audio);
-    final acousticHhFuture = compute(acousticAndHhIsolate, trimmed);
+    final acousticHhFuture = compute(acousticAndHhIsolate, audio);
 
     // Haptic (passive): extraction in isolate (still passed to fusion DNN
     // for completeness — backend trained with zeros so impact is minimal)
@@ -78,21 +81,22 @@ class MultimodalAnalyzer {
     );
 
     // Vi-Liquid late fusion: combine DNN probs with physical EI rule.
-    // acousticHhScore gates the Hollow Heart trigger (dual confirmation).
+    // The LIVE local HH score (computed from the actual knock, not the
+    // training-mean DNN input) gates the Hollow Heart trigger.
     final viLiquid = _mobileFusion.fuse(
       pImmature: fusion.pImmature,
       pRipe: fusion.pRipe,
       pOverripe: fusion.pOverripe,
       f2Hz: srrResult.f2Hz,
       massKg: massKg,
-      acousticHhScore: acousticHh.hh[0],
+      acousticHhScore: acousticHh.localHhScore,
     );
 
     final acousticF2Hz = acousticHh.acoustic[111];
     final acousticF2Db = acousticHh.acoustic[112];
-    final hhScore = acousticHh.hh[0];
+    final hhScore = acousticHh.localHhScore;
     final contactQuality = hapticVec[6];
-    final signalRms = _rms(trimmed);
+    final signalRms = _rms(audio);
 
     return MultimodalResult(
       fusion: fusion,

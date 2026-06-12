@@ -112,26 +112,30 @@ Tüm çıkarım (inference) **cihaz üzerinde** gerçekleştirilir; internet ba�
 - **Test accuracy: %29.63** (Qilin held-out karpuzlar → subject leakage gerçek limit)
 
 ### Mobil Pipeline Numerical Doğrulama (Dart vs Python librosa)
-Bir referans Qilin WAV (karpuz #1, 3 sn) üzerinde her öznitelik grubunun Pearson korelasyonu:
+Telefonun çalıştırdığı Dart DSP kodunun birebir aynısı masaüstünde yeniden üretilebilir bir test düzeneğiyle (`tool/parity_check.dart`) referans Qilin WAV'ları üzerinde çalıştırılıp Python çıktılarıyla karşılaştırılmıştır. İlk ölçümde r=0.910 olan ortalama korelasyon, üç sistematik farkın tespit edilip giderilmesiyle r=0.995'e yükseltilmiştir:
+
+1. **power_to_db referans farkı** (Dart ref=max, librosa ref=1.0 → MFCC[0]'a sabit ofset): düzeltme sonrası dört MFCC istatistik grubu da r=1.000.
+2. **Chroma filterbank yapısı** (bin→MIDI yuvarlama yerine librosa'nın Gaussian log-frekans filterbank'i birebir porte edildi): r=0.047 → r=0.990.
+3. **Tam-ses FFT uzunluğu** (2'nin kuvvetine sıfır-doldurma yerine numpy gibi tam-N karma-taban FFT): spektral entropi birebir eşitlendi (0.449 = 0.449).
+
+Nihai parite tablosu:
 
 | Öznitelik grubu | Pearson r |
 |---|---|
-| MFCC mean | 0.994 |
-| MFCC std | 1.000 |
-| MFCC min | 0.999 |
-| MFCC max | 0.853 (MFCC[0] offset bias) |
-| Delta MFCC ortalama | 0.998 |
-| Delta MFCC std | 1.000 |
+| MFCC mean / std / min / max | 1.000 (dördü de) |
+| Delta MFCC ortalama / std | 0.998 / 1.000 |
 | ZCR | 1.000 |
 | Spektral (4 mean/std) | 0.997 |
 | Spektral kontrast 7 bant | 0.948 |
 | Enerji | 0.996 |
-| Chroma 12 | 1.000 |
+| Chroma 12 | 0.990 |
 | f₂ / f₂_db / spektral entropi | 1.000 |
 | Zaman alanı | 1.000 |
-| **Ortalama** | **0.910** |
+| **Ortalama** | **0.995** |
 
-> Mobil pipeline backend ile **r = 0.910** ortalama Pearson korelasyonu. MFCC[0] katsayısında sistematik bir offset bias gözlemlendi; fusion modeli eğitim sırasında bu farkı normalize ettiği için tahmin doğruluğuna anlamlı etkisi olmamaktadır.
+> **Uçtan uca tahmin eşdeğerliği:** 12 etiketli Qilin örneğinde Dart-hesaplı akustik vektörler fusion modeline verildiğinde Python-hesaplı vektörlerle **12/12 aynı tahmin** üretilmiştir (akustik kanal fonksiyonel olarak özdeş). Tüm kanallar birlikte telefon-backend tahmin uyumu 10/12'dir; kalan iki fark modelin kendisinin düşük güvenle (0.45–0.64) karar verdiği sınır vakalarıdır.
+
+> **Hollow Heart kanal bulgusu (rapora değerli bir mühendislik hikayesi):** Eğitim pipeline'ının HH vektör düzeni `[dp, dm, sp, cp, hnr, hh_score, confidence, active_n]` iken model metadata dosyası farklı bir düzen belgelemekteydi; ayrıca eğitim kodundaki bir anahtar-adı uyuşmazlığı nedeniyle spectral bileşeni eğitim setinde sabit 0 kalmıştır. Bu tespit üzerine mobil tarafta DNN'in HH girdisi eğitim ortalamalarıyla beslenmiş (nötr-ikame), canlı kayıttan hesaplanan basitleştirilmiş HH skoru yalnızca Vi-Liquid içi-boş tetiğinin çift-onay kapısında kullanılmıştır. Bu olay, mobil ML dağıtımında "metadata değil, eğitim kodu ground truth'tur" ilkesinin somut bir örneği olarak raporda tartışılabilir.
 
 ### Vi-Liquid Aktif Haptik Mobil Dağıtım (Fiziksel Cihaz Testi)
 v12 sürümü Samsung Galaxy seri Android cihaz üzerinde test edildi. Karpuz olmayan bir referans nesne (1L su şişesi) ile sistem davranışı:
@@ -211,7 +215,7 @@ v12 sürümü Samsung Galaxy seri Android cihaz üzerinde test edildi. Karpuz ol
 ### PROJE BİLDİRİMİ + DECLARATION (şablon metnini bozma)
 
 ### ÖZET (1 sayfa, **150-200 kelime**)
-**Yazılacak metin:** Bu projede 19 karpuzluk Qilin veri seti üzerinde çok modlu (görsel + akustik + aktif haptik) tahribatsız karpuz olgunluk tespit sistemi geliştirilmiştir. Mobil bir Android uygulaması içerisinde fotoğraf, vuruş sesi ve Vi-Liquid metodolojisi tabanlı titreşim cevabı toplanmakta; tüm öznitelik çıkarımı ve yapay zekâ çıkarımı cihaz üzerinde gerçekleştirilmektedir. Sistem mimarisi 146 boyutlu birleşik öznitelik vektörü (120 akustik + 11 görsel + 7 haptik + 8 hollow heart), Random Forest / KNN / DNN sınıflandırıcılar ve geç füzyon (late fusion) kuralından oluşmaktadır. Leave-One-Watermelon-Out (LOWO) çapraz doğrulaması ile gerçekleştirilen değerlendirmede Random Forest modeli 2-sınıf (Yenir/Yenmez) görevinde %61.5 doğruluk elde etmiştir. Mobil tarafı öznitelik çıkarımı backend referansı ile r=0.910 Pearson korelasyonu göstermiştir. Aktif haptik modülü ile fiziksel kural tabanlı Hollow Heart tetik mekanizması, akustik ve görsel kanallarla çelişen vakalarda doğru sınıflama sağlamıştır.
+**Yazılacak metin:** Bu projede 19 karpuzluk Qilin veri seti üzerinde çok modlu (görsel + akustik + aktif haptik) tahribatsız karpuz olgunluk tespit sistemi geliştirilmiştir. Mobil bir Android uygulaması içerisinde fotoğraf, vuruş sesi ve Vi-Liquid metodolojisi tabanlı titreşim cevabı toplanmakta; tüm öznitelik çıkarımı ve yapay zekâ çıkarımı cihaz üzerinde gerçekleştirilmektedir. Sistem mimarisi 146 boyutlu birleşik öznitelik vektörü (120 akustik + 11 görsel + 7 haptik + 8 hollow heart), Random Forest / KNN / DNN sınıflandırıcılar ve geç füzyon (late fusion) kuralından oluşmaktadır. Leave-One-Watermelon-Out (LOWO) çapraz doğrulaması ile gerçekleştirilen değerlendirmede Random Forest modeli 2-sınıf (Yenir/Yenmez) görevinde %61.5 doğruluk elde etmiştir. Mobil tarafı öznitelik çıkarımı backend referansı ile r=0.995 Pearson korelasyonu göstermiş, akustik kanal 12/12 örnekte backend ile aynı tahmini üretmiştir. Aktif haptik modülü ile fiziksel kural tabanlı Hollow Heart tetik mekanizması, akustik ve görsel kanallarla çelişen vakalarda doğru sınıflama sağlamıştır.
 
 **Anahtar Kelimeler** (4-8 alfabetik): Akustik analiz, Çok modlu yapay zekâ, Karpuz olgunluğu, Late fusion, Mobil derin öğrenme, Tahribatsız test, Vi-Liquid
 
@@ -391,7 +395,7 @@ Tahribatsız test ihtiyacı; mevcut çözümlerin (laboratuvar Brix metresi, aku
 - **Çizelge 4.3**: Sınıf bazlı precision/recall
 
 **4.5. Mobil Pipeline Numerical Doğrulama**
-- Dart vs Python r=0.910 ortalama
+- Dart vs Python r=0.995 ortalama (uç uca: akustik kanal 12/12 tahmin-özdeş)
 - **Çizelge 4.4**: Öznitelik grubu bazlı Pearson r
 - MFCC[0] offset bias yorumu
 
@@ -418,7 +422,7 @@ Tahribatsız test ihtiyacı; mevcut çözümlerin (laboratuvar Brix metresi, aku
 
 **5.1. Sonuçlar**
 - Sistemin akademik özet bulgusu (RFC 2-sınıf %61.5 LOWO)
-- Mobil dağıtım başarısı (r=0.910 numerical eşdeğerlik)
+- Mobil dağıtım başarısı (r=0.995 numerical eşdeğerlik, akustik kanal tahmin-özdeş)
 - Vi-Liquid + fizik kuralı + ML hibrit yaklaşımın çelişkili sinyalleri çözmedeki başarısı
 - Halk-dostu UI'nın akademik prototip yerine son kullanıcı kullanımına uygunluğu
 

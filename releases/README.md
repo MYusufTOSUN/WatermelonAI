@@ -1,5 +1,22 @@
 # Karpuz AI — APK Sürümleri
 
+## watermelon_ai_v17_parity.apk (EN GÜNCEL — bunu kur)
+
+**Sürüm:** 2.3.0 (Tam Parite)
+**Boyut:** ~87 MB
+**Tarih:** 2026-06-12
+
+### v17 — masaüstü parite düzeneğiyle doğrulanmış sürüm
+Telefonun DSP kodu artık masaüstünde birebir test edilebiliyor (`flutter_app/tool/parity_check.dart`). Bu düzenek üç sistematik fark yakaladı, üçü de düzeltildi:
+- **power_to_db** librosa semantiğine çekildi → 4 MFCC grubu r=1.000
+- **Chroma** librosa Gaussian filterbank birebir port → r=0.047 → 0.990
+- **Tam-N FFT** (sıfır-doldurmasız) → spektral entropi birebir (0.449=0.449)
+- **HH kanal keşfi**: eğitim vektör düzeni metadata'dan farklıymış; DNN'e eğitim ortalamaları verilir, canlı HH skoru sadece Vi-Liquid tetiğinde
+- Ses kırpma kaldırıldı (eğitim tam-ses; cepstrum düzeltmesi sonrası tam ses ~170 ms)
+
+**Sonuç:** Feature parite ortalama **r=0.995**; akustik kanal **12/12 tahmin-özdeş**; telefon-backend uyumu **10/12** (kalan 2'si modelin sınır vakaları). v13'teki "hep aynı sınıf" sapması kökünden çözüldü.
+
+
 ## watermelon_ai_v15_fixed.apk (EN GÜNCEL — bunu kur)
 
 **Sürüm:** 2.2.0 (Doğruluk regresyonu düzeltmesi)

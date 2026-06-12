@@ -120,26 +120,32 @@ Saha (physical watermelon) testine alternatif olarak APK içine **12 Brix-etiket
 
 ### 3.6 Doğrulama Sonuçları (numerical)
 
-Bundled WAV "Doğrulama testi" ekranı, Dart-tarafı akustik feature çıkarımının Python librosa referansla numerical eşdeğerliğini ölçer. Bir referans Qilin WAV (karpuz #1, 3 sn) üzerindeki sonuç:
+Dart-tarafı akustik feature çıkarımının Python librosa referansla numerical eşdeğerliği, masaüstünde çalışan yeniden üretilebilir bir test düzeneğiyle ölçülmüştür (`flutter_app/tool/parity_check.dart` + `tool/parity_predict.py`). Düzenek, telefonun çalıştırdığı Dart kodunun birebir aynısını referans Qilin WAV'ları üzerinde çalıştırıp Python çıktılarıyla karşılaştırır.
 
-| Feature grubu | Pearson r | Yorum |
-|---|---|---|
-| MFCC mean | 0.994 | MFCC[0]'da sabit offset bias |
-| MFCC std | 1.000 | Birebir |
-| MFCC min | 0.999 | |
-| MFCC max | 0.853 | MFCC[0] bias etkisi |
-| Delta MFCC mean | 0.998 | |
-| Delta MFCC std | 1.000 | |
-| ZCR | 1.000 | Birebir |
-| Spectral (centroid/bw/rolloff/flatness) | 0.997 | |
-| Spectral Contrast 7-band | 0.948 | |
-| Energy | 0.996 | |
-| Chroma 12 | 1.000 | Birebir |
-| **f2 / f2_db / spectral_entropy** | **1.000** | **Kritik features birebir** |
-| Time-domain (peak/crest/attack/decay) | 1.000 | Birebir |
-| **Ortalama** | **0.910** | |
+İlk ölçüm (r=0.910 ortalama) üç sistematik fark ortaya çıkardı ve üçü de giderildi:
 
-**Sonuç**: Mobil pipeline backend ile r=0.91 ortalama Pearson korelasyonu gösterdi. MFCC[0] katsayısında sistematik bir offset bias gözlemlendi (librosa power-to-db reference farklılığı), fusion model bu absolut farkı eğitim sırasında normalize ettiği için tahmin doğruluğuna anlamlı etkisi olmamaktadır.
+1. **power_to_db referans farkı**: Dart implementasyonu `ref=max` kullanırken librosa `ref=1.0` kullanır; fark sabit bir ofset olarak MFCC[0] katsayısına biniyordu (MFCC max r=0.853). Düzeltme sonrası dört MFCC istatistik grubu da r=1.000.
+2. **Chroma filterbank yapısı**: İlk implementasyon FFT bin'lerini en yakın MIDI nota sınıfına yuvarlıyordu; librosa ise Gaussian ağırlıklı log-frekans filterbank kullanır (r=0.047 — yapısal uyumsuzluk). librosa `filters.chroma` birebir porte edildi → r=0.990.
+3. **Spektral entropi FFT uzunluğu**: Dart, FFT'yi 2'nin kuvvetine sıfır-doldurma yaparken backend numpy `rfft`'i tam sinyal uzunluğunda alır; eklenen sıfır bin'leri normalize entropiyi kaydırıyordu (0.481 ≠ 0.449). Tam-N karma-taban FFT'ye geçildi → birebir eşitlik.
+
+Düzeltmeler sonrası nihai parite:
+
+| Feature grubu | Pearson r |
+|---|---|
+| MFCC mean / std / min / max | 1.000 / 1.000 / 1.000 / 1.000 |
+| Delta MFCC mean / std | 0.998 / 1.000 |
+| ZCR | 1.000 |
+| Spectral (centroid/bw/rolloff/flatness) | 0.997 |
+| Spectral Contrast 7-band | 0.948 |
+| Energy | 0.996 |
+| Chroma 12 | 0.990 |
+| f2 / f2_db / spectral_entropy | 1.000 |
+| Time-domain (peak/crest/attack/decay) | 1.000 |
+| **Ortalama** | **0.995** |
+
+**Uçtan uca tahmin eşdeğerliği**: 12 bundled Qilin örneği üzerinde Dart-hesaplı akustik vektörler fusion modeline verildiğinde, Python-hesaplı vektörlerle **12/12 aynı tahmin** üretilmiştir (akustik kanal fonksiyonel olarak özdeş). Tüm kanallar birlikte değerlendirildiğinde telefon-backend tahmin uyumu 10/12'dir; kalan iki fark, modelin kendisinin de düşük güvenle (0.45–0.64) karar verdiği sınır vakalarıdır.
+
+**Hollow Heart kanalı bulgusu**: Eğitim pipeline'ının (`data_loader._extract_hh_8d`) HH vektör düzeni `[dp, dm, sp, cp, hnr, hh_score, confidence, active_n]` iken model metadata dosyası farklı bir düzen belgeliyordu; ayrıca eğitim kodundaki bir anahtar-adı uyuşmazlığı nedeniyle `spectral` bileşeni eğitim setinde sabit 0'dır. Mobil tarafta DNN'in HH girdisi eğitim ortalamalarıyla beslenmiş (görsel/haptik kanallarda kullanılan nötr-ikame yaklaşımının aynısı), canlı kayıttan hesaplanan basitleştirilmiş HH skoru ise yalnızca Vi-Liquid içi-boş tetiğinin çift-onay kapısında kullanılmıştır.
 
 ---
 

@@ -80,8 +80,8 @@ class AcousticFeatureExtractor {
     out[offset++] = _meanD(logE);
     out[offset++] = _stdD(logE);
 
-    // 6. Chroma (12)
-    final chroma = DspUtils.chromaMean12(magSpec);
+    // 6. Chroma (12) — librosa chroma_stft uses the POWER spectrogram
+    final chroma = DspUtils.chromaMean12(powerSpec);
     for (int i = 0; i < 12; i++) {
       out[offset++] = chroma[i];
     }

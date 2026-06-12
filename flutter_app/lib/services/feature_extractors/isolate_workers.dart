@@ -26,16 +26,23 @@ Float64List hhExtractIsolate(Float64List audio) {
 
 /// Combined acoustic + HH from a single audio buffer — saves an extra
 /// isolate roundtrip when both vectors are needed.
+///
+/// [hh] is the DNN input (training-mean substitution); [localHhScore] is
+/// the LIVE 0-1 hollow-likelihood from the recording, used by the
+/// Vi-Liquid trigger gate and the UI risk tile.
 class AcousticHhResult {
   final Float64List acoustic;
   final Float64List hh;
-  AcousticHhResult(this.acoustic, this.hh);
+  final double localHhScore;
+  AcousticHhResult(this.acoustic, this.hh, this.localHhScore);
 }
 
 AcousticHhResult acousticAndHhIsolate(Float64List audio) {
+  final extractor = HhFeatureExtractor();
   final a = AcousticFeatureExtractor().extract(audio);
-  final h = HhFeatureExtractor().extract(audio);
-  return AcousticHhResult(a, h);
+  final h = extractor.extract(audio);
+  final live = extractor.liveScore(audio);
+  return AcousticHhResult(a, h, live);
 }
 
 /// Visual 11-D extraction (decodes + resizes inside isolate)

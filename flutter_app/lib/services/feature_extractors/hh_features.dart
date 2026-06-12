@@ -3,23 +3,39 @@ import 'dart:typed_data';
 
 import '../dsp/dsp_utils.dart';
 
-/// 8-D Hollow Heart feature vector — simplified Dart approximation of
-/// backend/module_e/hollow_heart_detector.py.
+/// Hollow Heart channel — TWO separate outputs:
 ///
-/// Backend uses 5 indicators (dual_peak, damping, spectral_spread, cepstral, HNR)
-/// each producing a [0,1] sub-score. We compute lightweight versions and combine.
+/// 1. [extract] → the 8-D vector fed to the FUSION DNN. The training
+///    pipeline (backend/pipeline/data_loader.py::_extract_hh_8d) used the
+///    layout [dp, dm, sp, cp, hnr, hh_score, confidence, active_n] computed
+///    by the full 968-line backend detector (with sp≡0 due to a key-name
+///    bug baked into training). Our simplified Dart sub-scores do NOT match
+///    that detector numerically (offline test: wrong values flipped 4/12
+///    fusion predictions). Strategy: feed the TRAINING MEANS — the same
+///    neutral-substitution trick used for the visual/haptic channels —
+///    which restored 10/12 agreement with the backend in
+///    tool/parity_predict.py.
 ///
-/// Layout:
-///   [0] hh_score (0-1)        — weighted overall score
-///   [1] dual_peak_score (0-1) — spectral peak split indicator
-///   [2] damping_score (0-1)   — decay speed indicator
-///   [3] spectral_score (0-1)  — spectral spread/entropy
-///   [4] cepstral_score (0-1)  — cepstral periodicity loss
-///   [5] hnr_score (0-1)       — harmonics-to-noise indicator
-///   [6] hnr_db                — combined HNR estimate (dB)
-///   [7] damping_ratio         — estimated damping ratio (zeta)
+/// 2. [liveScore] → a LIVE 0-1 hollow-likelihood score from our simplified
+///    5-indicator analysis of the actual knock recording. This does NOT go
+///    into the DNN; it gates the Vi-Liquid Hollow-Heart trigger (dual
+///    confirmation) and feeds the "içi boş riski" UI tile.
 class HhFeatureExtractor {
   static const int featureDim = 8;
+
+  /// Training-set means of the 8-D HH input, layout
+  /// [dp, dm, sp, cp, hnr, hh_score, confidence, active_n]
+  /// (measured from data/processed/X_features.npy[:, 138:146]).
+  static const List<double> trainingMeans = [
+    0.470, // dual_peak score
+    0.287, // damping score
+    0.000, // spectral score (constant 0 in training — key-name bug)
+    0.218, // cepstral score
+    0.997, // hnr score
+    0.433, // hh_score
+    0.843, // confidence
+    0.299, // active_indicators / 5
+  ];
 
   static const double dualPeakMinDistanceHz = 15.0;
   static const double dualPeakMaxDistanceHz = 80.0;
@@ -36,41 +52,26 @@ class HhFeatureExtractor {
   static const double wCepstral = 0.15;
   static const double wHnr = 0.15;
 
+  /// DNN input: training-mean substitution (see class doc).
   Float64List extract(Float64List audio) {
-    final out = Float64List(featureDim);
-    if (audio.length < 64) return out;
+    return Float64List.fromList(trainingMeans);
+  }
 
-    // 1. Dual-peak detection in band 50-500 Hz
+  /// LIVE hollow-likelihood score (0-1) from the actual recording —
+  /// used by the Vi-Liquid trigger gate and the UI risk tile.
+  double liveScore(Float64List audio) {
+    if (audio.length < 64) return 0.0;
     final dualPeak = _dualPeakScore(audio);
-
-    // 2. Damping (decay rate from envelope)
     final damping = _dampingScore(audio);
-
-    // 3. Spectral spread + entropy + flatness
     final spectral = _spectralScore(audio);
-
-    // 4. Cepstral periodicity (simplified)
     final cepstral = _cepstralScore(audio);
-
-    // 5. HNR
     final hnr = _hnrScore(audio);
-
-    final hhScore = (wDualPeak * dualPeak[0] +
+    return (wDualPeak * dualPeak[0] +
             wDamping * damping[0] +
             wSpectral * spectral +
             wCepstral * cepstral +
             wHnr * hnr[0])
         .clamp(0.0, 1.0);
-
-    out[0] = hhScore;
-    out[1] = dualPeak[0];
-    out[2] = damping[0];
-    out[3] = spectral;
-    out[4] = cepstral;
-    out[5] = hnr[0];
-    out[6] = hnr[1]; // hnr_db
-    out[7] = damping[1]; // damping_ratio
-    return out;
   }
 
   // ----------------------------------------------------------------

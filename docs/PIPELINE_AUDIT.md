@@ -81,8 +81,22 @@ Bu davranış sistemin **çelişen sinyalleri çözdüğünü** ve fiziksel kura
 
 ---
 
+## v17 Güncellemesi — Parite Düzeneği ve Üç Sistematik Düzeltme
+
+v13'teki saha sapması ("hep ham/ALMA") sonrası, telefon DSP'sinin birebir kopyasını masaüstünde çalıştıran yeniden üretilebilir bir doğrulama düzeneği kuruldu (`flutter_app/tool/parity_check.dart` + `parity_predict.py`). Bulunan ve giderilen sistematik farklar:
+
+| Bulgu | Etki | Düzeltme | Sonuç |
+|---|---|---|---|
+| `power_to_db` ref=max (librosa ref=1.0) | MFCC[0]'a sabit ofset, MFCC max r=0.853 | librosa semantiği | 4 MFCC grubu r=1.000 |
+| Chroma: bin→MIDI yuvarlama (librosa: Gaussian filterbank) | r=0.047 — 12 feature fiilen gürültü | `librosa.filters.chroma` birebir port | r=0.990 |
+| Tam-ses FFT pow2'ye pad'leniyordu (numpy: tam N) | Entropi 0.481 ≠ 0.449 | Tam-N karma-taban FFT | Birebir eşit |
+| Canlı pipeline trim'i frame istatistiklerini kaydırıyordu | dMFCC mean r 0.998→0.792 | Trim kaldırıldı (cepstrum fix sonrası tam ses ~170 ms) | r=0.998 |
+| **HH vektör düzeni**: eğitim `[dp,dm,sp,cp,hnr,hh,conf,act]` — metadata yanlış belgelemiş; eğitimde `sp`≡0 (anahtar-adı bug'ı) | Telefon HH boyutlarını modele yanlış sırada veriyordu; 4/12 tahmin sapması | DNN'e eğitim ortalamaları; canlı HH skoru sadece Vi-Liquid kapısında | Uyum 10/12 |
+
+**Nihai durum:** Feature parite ortalama **r=0.995**; akustik kanal tek başına **12/12 tahmin-özdeş**; telefon-backend toplam uyum **10/12** (kalan 2 fark backend'in 0.45–0.64 güvenle karar verdiği sınır vakaları — modelin doğal sınırı).
+
 ## Sonuç
 
-Pipeline **%100 gerçek**, sahte placeholder yok. Modeller eğitilmiş, TFLite'lar doğrulanmış, telefonda gerçek hesaplama yapılıyor. Bilinçli yapılan basitleştirmeler (SRR, kütle, n_mels) belgelenmiş ve akademik olarak savunulabilir.
+Pipeline **%100 gerçek**, sahte placeholder yok. Modeller eğitilmiş, TFLite'lar doğrulanmış, telefonda gerçek hesaplama yapılıyor. Bilinçli yapılan basitleştirmeler (SRR, kütle, HH nötr-ikame) belgelenmiş ve akademik olarak savunulabilir. v17 itibarıyla telefonun ürettiği akustik feature'lar backend ile fonksiyonel olarak özdeştir ve bu iddia `tool/parity_check.dart` ile her an yeniden doğrulanabilir.
 
-Su şişesi testi bunu kanıtlar: sistemin verdiği "Yenmez (İçi Geçmiş)" kararı çelişen sinyallerin (görsel olgun + akustik olgun + titreşim cevabı zayıf) fiziksel kuralla çözülmesiyle ortaya çıktı.
+Su şişesi testi sistem sağlığını kanıtlar: verilen "Yenmez (İçi Geçmiş)" kararı çelişen sinyallerin (görsel olgun + akustik olgun + titreşim cevabı zayıf) fiziksel kuralla çözülmesiyle ortaya çıktı.

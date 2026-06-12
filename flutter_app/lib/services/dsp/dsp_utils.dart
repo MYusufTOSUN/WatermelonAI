@@ -191,23 +191,28 @@ class DspUtils {
       }
     }
 
-    // power_to_db(ref=max)
-    double globalMax = 1e-10;
-    for (final row in melSpec) {
-      for (final v in row) {
-        if (v > globalMax) globalMax = v;
-      }
-    }
+    // power_to_db with librosa semantics: ref=1.0 (NOT ref=max).
+    //   db = 10*log10(max(S, 1e-10)); then top_db clip at (max_db - 80).
+    // Using ref=max instead (the old behaviour) subtracts a constant from
+    // the whole log-mel matrix, which lands entirely on MFCC[0] (the DC
+    // term of the DCT) and produced a systematic offset vs the Python
+    // training features (MFCC max r=0.853). ref=1.0 removes that offset.
     final db = List<Float64List>.generate(
       melSpec.length,
       (_) => Float64List(melSpec.isEmpty ? 0 : melSpec[0].length),
     );
+    double maxDb = -double.infinity;
     for (int m = 0; m < melSpec.length; m++) {
       for (int t = 0; t < melSpec[m].length; t++) {
-        final ratio = melSpec[m][t] / globalMax;
-        db[m][t] = 10.0 *
-            (math.log(ratio.clamp(1e-10, double.infinity)) / math.ln10);
-        if (db[m][t] < -80.0) db[m][t] = -80.0;
+        final v = melSpec[m][t] < 1e-10 ? 1e-10 : melSpec[m][t];
+        db[m][t] = 10.0 * (math.log(v) / math.ln10);
+        if (db[m][t] > maxDb) maxDb = db[m][t];
+      }
+    }
+    final floorDb = maxDb - 80.0;
+    for (int m = 0; m < db.length; m++) {
+      for (int t = 0; t < db[m].length; t++) {
+        if (db[m][t] < floorDb) db[m][t] = floorDb;
       }
     }
 
@@ -735,44 +740,133 @@ class DspUtils {
     return out;
   }
 
-  /// Chroma STFT: 12 pitch classes, mean over time.
-  static Float64List chromaMean12(
-    List<Float64List> magSpec, {
+  /// Cached librosa-compatible chroma filterbank (12 × nBins).
+  static List<Float64List>? _chromaFbCache;
+
+  /// Faithful port of librosa.filters.chroma(sr, n_fft, n_chroma=12,
+  /// tuning=0, ctroct=5.0, octwidth=2, norm=2, base_c=True).
+  ///
+  /// The previous implementation (round each FFT bin to the nearest MIDI
+  /// pitch class and accumulate) was structurally different from librosa's
+  /// Gaussian-weighted log-frequency filterbank and produced r=0.047
+  /// against the Python training features. This port follows librosa
+  /// exactly except tuning estimation (tuning=0; knock sounds carry little
+  /// tonal content for the estimator anyway).
+  static List<Float64List> chromaFilterbank({
     int sr = audioSampleRate,
     int nFftLocal = nFft,
   }) {
+    if (_chromaFbCache != null) return _chromaFbCache!;
+    const nChroma = 12;
+    const nChroma2 = 6.0; // round(nChroma / 2)
     final nBins = nFftLocal ~/ 2 + 1;
-    final out = Float64List(12);
-    if (magSpec.isEmpty) return out;
-    final accum = Float64List(12);
-    int totalFrames = 0;
 
-    for (int t = 0; t < magSpec.length; t++) {
-      final spec = magSpec[t];
-      final frameChroma = Float64List(12);
-      for (int k = 1; k < nBins; k++) {
-        final f = k * sr / nFftLocal;
-        if (f < 27.5 || f > sr / 2) continue;
-        final midi = 69.0 + 12.0 * (math.log(f / 440.0) / math.ln2);
-        if (midi.isNaN || midi.isInfinite) continue;
-        final pc = (midi.round() % 12 + 12) % 12;
-        frameChroma[pc] += spec[k];
-      }
-      // Normalize frame
-      double maxV = 0.0;
-      for (final v in frameChroma) {
-        if (v > maxV) maxV = v;
-      }
-      if (maxV > 1e-10) {
-        for (int i = 0; i < 12; i++) {
-          accum[i] += frameChroma[i] / maxV;
-        }
-        totalFrames++;
+    // frequencies = linspace(0, sr, n_fft, endpoint=False)[1:]
+    // frqbins[k] (k=1..n_fft-1) = 12 * log2(f_k / 27.5);  frqbins[0] is the
+    // synthetic low anchor frqbins[1] - 1.5*12 (librosa concatenate).
+    final frqbins = Float64List(nFftLocal);
+    for (int k = 1; k < nFftLocal; k++) {
+      final f = k * sr / nFftLocal;
+      frqbins[k] = nChroma * (math.log(f / 27.5) / math.ln2);
+    }
+    frqbins[0] = frqbins[1] - 1.5 * nChroma;
+
+    // binwidthbins[k] = max(frqbins[k+1] - frqbins[k], 1.0); last = 1.0
+    final binWidth = Float64List(nFftLocal);
+    for (int k = 0; k < nFftLocal - 1; k++) {
+      final d = frqbins[k + 1] - frqbins[k];
+      binWidth[k] = d > 1.0 ? d : 1.0;
+    }
+    binWidth[nFftLocal - 1] = 1.0;
+
+    // wts[c][k] = exp(-0.5 * (2 * wrap(frqbins[k] - c) / binWidth[k])^2)
+    final wts = List<Float64List>.generate(
+      nChroma,
+      (_) => Float64List(nFftLocal),
+    );
+    for (int c = 0; c < nChroma; c++) {
+      for (int k = 0; k < nFftLocal; k++) {
+        double d = frqbins[k] - c;
+        // remainder(D + 6 + 120, 12) - 6  →  wrap to [-6, 6)
+        d = (d + nChroma2 + 10 * nChroma) % nChroma - nChroma2;
+        final z = 2.0 * d / binWidth[k];
+        wts[c][k] = math.exp(-0.5 * z * z);
       }
     }
-    if (totalFrames == 0) return out;
-    for (int i = 0; i < 12; i++) {
-      out[i] = accum[i] / totalFrames;
+
+    // Column-wise L2 normalisation (librosa util.normalize(wts, norm=2, axis=0))
+    for (int k = 0; k < nFftLocal; k++) {
+      double ss = 0.0;
+      for (int c = 0; c < nChroma; c++) {
+        ss += wts[c][k] * wts[c][k];
+      }
+      final norm = math.sqrt(ss);
+      if (norm > 1e-12) {
+        for (int c = 0; c < nChroma; c++) {
+          wts[c][k] /= norm;
+        }
+      }
+    }
+
+    // Octave-centred Gaussian weighting (ctroct=5.0, octwidth=2)
+    for (int k = 0; k < nFftLocal; k++) {
+      final z = (frqbins[k] / nChroma - 5.0) / 2.0;
+      final w = math.exp(-0.5 * z * z);
+      for (int c = 0; c < nChroma; c++) {
+        wts[c][k] *= w;
+      }
+    }
+
+    // base_c=True → roll rows by -3 (chroma index 0 = C instead of A)
+    final rolled = List<Float64List>.generate(
+      nChroma,
+      (c) => Float64List(nBins),
+    );
+    for (int c = 0; c < nChroma; c++) {
+      final src = wts[(c + 3) % nChroma];
+      for (int k = 0; k < nBins; k++) {
+        rolled[c][k] = src[k];
+      }
+    }
+    _chromaFbCache = rolled;
+    return rolled;
+  }
+
+  /// Chroma STFT mean over time — librosa.feature.chroma_stft semantics:
+  /// raw = chroma_fb @ POWER spectrogram, then per-frame max-normalisation
+  /// (norm=inf), then mean over frames.
+  static Float64List chromaMean12(
+    List<Float64List> powerSpec, {
+    int sr = audioSampleRate,
+    int nFftLocal = nFft,
+  }) {
+    final out = Float64List(12);
+    if (powerSpec.isEmpty) return out;
+    final fb = chromaFilterbank(sr: sr, nFftLocal: nFftLocal);
+    final nBins = nFftLocal ~/ 2 + 1;
+
+    final accum = Float64List(12);
+    final frameChroma = Float64List(12);
+    for (int t = 0; t < powerSpec.length; t++) {
+      final spec = powerSpec[t];
+      double maxV = 0.0;
+      for (int c = 0; c < 12; c++) {
+        double sum = 0.0;
+        final filter = fb[c];
+        for (int k = 0; k < nBins; k++) {
+          sum += filter[k] * spec[k];
+        }
+        frameChroma[c] = sum;
+        if (sum > maxV) maxV = sum;
+      }
+      if (maxV > 1e-12) {
+        for (int c = 0; c < 12; c++) {
+          accum[c] += frameChroma[c] / maxV;
+        }
+      }
+    }
+    for (int c = 0; c < 12; c++) {
+      out[c] = accum[c] / powerSpec.length;
     }
     return out;
   }
@@ -781,7 +875,13 @@ class DspUtils {
   /// (dominant frequency, spectral entropy, HH dual-peak) can reuse them
   /// without redoing the FFT 3 separate times.
   ///
-  /// Returns ({mags: |FFT|, fftSize: padded length}).
+  /// Returns ({mags: |FFT|, fftSize: transform length}).
+  ///
+  /// Uses an EXACT-length FFT (no zero padding) to mirror numpy's
+  /// rfft(audio * hanning(N)) in the backend. Zero-padding to a power of
+  /// two changed the bin grid and added thousands of near-zero bins, which
+  /// skewed the normalized spectral entropy (0.481 vs numpy's 0.449).
+  /// fftea handles composite sizes via mixed-radix FFT.
   static ({Float64List mags, int fftSize}) computeFullAudioMag(
     Float64List audio,
   ) {
@@ -790,21 +890,20 @@ class DspUtils {
       return (mags: Float64List(0), fftSize: 0);
     }
     final window = hannWindow(n);
-    final fftSize = _nextPow2(n);
-    final padded = Float64List(fftSize);
+    final windowed = Float64List(n);
     for (int i = 0; i < n; i++) {
-      padded[i] = audio[i] * window[i];
+      windowed[i] = audio[i] * window[i];
     }
-    final fft = FFT(fftSize);
-    final complex = fft.realFft(padded);
-    final nBins = fftSize ~/ 2 + 1;
+    final fft = FFT(n);
+    final complex = fft.realFft(windowed);
+    final nBins = n ~/ 2 + 1;
     final mags = Float64List(nBins);
     for (int k = 0; k < nBins; k++) {
       final re = complex[k].x;
       final im = complex[k].y;
       mags[k] = math.sqrt(re * re + im * im);
     }
-    return (mags: mags, fftSize: fftSize);
+    return (mags: mags, fftSize: n);
   }
 
   /// Find dominant frequency from precomputed magnitudes.
