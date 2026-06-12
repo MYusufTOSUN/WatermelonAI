@@ -32,7 +32,11 @@ class SensorRecorderService {
     await _sub?.cancel();
     _sub = null;
     _stopTime = DateTime.now();
-    final durationMs = _stopTime!.difference(_startTime!).inMilliseconds;
+    // Guard against stop() being called without a prior start() (would
+    // otherwise throw on the null _startTime). Fall back to nominal 100 Hz.
+    final durationMs = _startTime != null
+        ? _stopTime!.difference(_startTime!).inMilliseconds
+        : 0;
     final n = _x.length;
     final sampleRate =
         durationMs > 0 ? (n * 1000.0) / durationMs : 100.0;

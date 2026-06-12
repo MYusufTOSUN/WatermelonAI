@@ -4,12 +4,10 @@ import 'ripeness_result.dart';
 import 'vi_liquid_result.dart';
 
 /// Aggregated result of running the multimodal pipeline.
-/// Holds the ML fusion prediction (acoustic+visual+HH→DNN), the
-/// visual-only baseline (MobileNetV3), and the Vi-Liquid active haptic
-/// late-fusion result (physical f2+EI rule).
+/// Holds the ML fusion prediction (acoustic + handcrafted-visual + HH → DNN)
+/// and the Vi-Liquid active haptic late-fusion result (physical f2 + EI rule).
 class MultimodalResult {
   final RipenessResult fusion;
-  final RipenessResult? visualOnly;
   final ViLiquidResult? viLiquid;
   final double f2Hz; // acoustic-derived f2 (from microphone)
   final double f2Db;
@@ -20,7 +18,6 @@ class MultimodalResult {
 
   MultimodalResult({
     required this.fusion,
-    this.visualOnly,
     this.viLiquid,
     required this.f2Hz,
     required this.f2Db,

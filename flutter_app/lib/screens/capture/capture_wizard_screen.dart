@@ -265,7 +265,6 @@ class _CaptureWizardScreenState extends State<CaptureWizardScreen> {
         "viLiquidF2Hz": vl?.f2Hz,
         "hhScore": result.hhScore,
         "contactQuality": result.contactQuality,
-        "visualOnlyClassId": result.visualOnly?.classId,
         "imagePath": _photoPath!,
         "audioPath": _audioPath!,
         "timestamp": DateTime.now().toIso8601String(),

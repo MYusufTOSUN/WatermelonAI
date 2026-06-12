@@ -11,17 +11,21 @@ import 'fusion_model_service.dart';
 import 'sensor_recorder_service.dart';
 import 'vi_liquid/mobile_fusion_engine.dart';
 import 'vi_liquid/srr_processor.dart';
-import 'visual_classifier_service.dart';
 
 /// Orchestrates the on-device multimodal pipeline + Vi-Liquid active
 /// haptic late fusion.
 ///
 /// Heavy DSP runs in background isolates so the UI thread stays alive
 /// during the 2-5 second analysis step.
+///
+/// NOTE: The standalone MobileNetV3 "visual-only" baseline was removed
+/// from the live path — it scored only ~30% on held-out watermelons
+/// (subject leakage) and was no longer displayed anywhere, so running it
+/// per analysis just wasted ~1 second. The 11-D handcrafted visual
+/// features still feed the fusion DNN; the MobileNetV3 model artifact is
+/// kept in the repo for the report.
 class MultimodalAnalyzer {
-  final VisualClassifierService _visualClassifier = VisualClassifierService();
   final FusionModelService _fusion = FusionModelService();
-  final SrrProcessor _srr = SrrProcessor();
   final MobileFusionEngine _mobileFusion = MobileFusionEngine();
 
   bool _loaded = false;
@@ -29,7 +33,6 @@ class MultimodalAnalyzer {
 
   Future<void> loadModels() async {
     if (_loaded) return;
-    await _visualClassifier.loadModel();
     await _fusion.loadModel();
     _loaded = true;
   }
@@ -42,12 +45,9 @@ class MultimodalAnalyzer {
   }) async {
     if (!_loaded) await loadModels();
 
-    // Visual: bytes → isolate → 11-D
+    // Visual: bytes → isolate → 11-D handcrafted features
     final photoBytes = await photo.readAsBytes();
     final visualVecFuture = compute(visualExtractIsolate, photoBytes);
-
-    // Visual-only baseline (MobileNetV3)
-    final visualOnlyFuture = _visualClassifier.classifyImage(photo);
 
     // Audio: load WAV, trim silence, run isolate for 120+8
     final audio = await AudioRecorderService.loadWavAsFloat64(audioWavPath);
@@ -67,7 +67,6 @@ class MultimodalAnalyzer {
     final visualVec = await visualVecFuture;
     final acousticHh = await acousticHhFuture;
     final hapticVec = await hapticVecFuture;
-    final visualOnly = await visualOnlyFuture;
     final srrResult = await viLiquidFuture;
 
     // Fusion DNN (TFLite, main isolate)
@@ -97,7 +96,6 @@ class MultimodalAnalyzer {
 
     return MultimodalResult(
       fusion: fusion,
-      visualOnly: visualOnly,
       viLiquid: viLiquid,
       f2Hz: acousticF2Hz,
       f2Db: acousticF2Db,
@@ -117,7 +115,6 @@ class MultimodalAnalyzer {
   }
 
   void dispose() {
-    _visualClassifier.dispose();
     _fusion.dispose();
     _loaded = false;
   }
