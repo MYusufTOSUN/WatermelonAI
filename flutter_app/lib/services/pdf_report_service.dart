@@ -27,7 +27,14 @@ class PdfReportService {
         await rootBundle.load("assets/fonts/Roboto-Regular.ttf"));
     final bold =
         pw.Font.ttf(await rootBundle.load("assets/fonts/Roboto-Bold.ttf"));
-    final theme = pw.ThemeData.withFont(base: regular, bold: bold);
+    // italic/boldItalic için de Türkçe-destekli fontu kullan ki italic
+    // metinlerde varsayılan fonta düşüp kutu çıkmasın.
+    final theme = pw.ThemeData.withFont(
+      base: regular,
+      bold: bold,
+      italic: regular,
+      boldItalic: bold,
+    );
 
     final doc = pw.Document(theme: theme);
     final fusion = result.fusion;
@@ -143,7 +150,6 @@ class PdfReportService {
           _kvTable([
             ["Vuruş sesi rezonansı (f2)", "${result.f2Hz.toStringAsFixed(0)} Hz"],
             ["f2 genliği", "${result.f2Db.toStringAsFixed(1)} dB"],
-            ["İçi boş riski (akustik)", "%${(result.hhScore * 100).toStringAsFixed(0)}"],
             ["Vuruş enerjisi (sinyal RMS)", result.signalRms.toStringAsFixed(4)],
             ["Düşük frekans (tok ses) oranı", "%${(result.lowBandRatio * 100).toStringAsFixed(0)}"],
             ["Kayıt kalitesi", "%${(result.recordingQuality * 100).toStringAsFixed(0)}${result.isLowQuality ? " (zayıf — tekrar önerilir)" : ""}"],
@@ -162,11 +168,9 @@ class PdfReportService {
             _sectionTitle("Vi-Liquid Aktif Haptik (Bilgi Amaçlı)"),
             _kvTable([
               ["Titreşim yankı tonu (SRR f2)", "${vl.f2Hz.toStringAsFixed(0)} Hz"],
-              ["Elastiklik İndeksi (EI = f2² × m^⅔)", vl.ei.toStringAsExponential(2)],
+              ["Elastiklik İndeksi (EI = f2² × m^2/3)", vl.ei.toStringAsExponential(2)],
               ["EI (normalize)", vl.eiNormalized.toStringAsFixed(3)],
               ["Karpuz ağırlığı (fotodan tahmin)", "${vl.massKg.toStringAsFixed(1)} kg"],
-              ["Birleşik skor", vl.finalScore.toStringAsFixed(3)],
-              ["Titreşim cevabı uyarısı", vl.isHollowHeart ? "Zayıf (şüpheli)" : "Normal"],
             ]),
             pw.SizedBox(height: 6),
             pw.Text(

@@ -432,9 +432,14 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   // ─────────────────────────── Ölçüm Kartları (detay) ────────────────
+  // NOT: "İçi boş riski" (basitleştirilmiş canlı HH skoru) gösterilmiyor —
+  // güvenilmez bir proxy olup karara dahil değildir; %92 gibi yüksek değerler
+  // doğru "AL" kararıyla çelişip kullanıcıyı yanıltıyordu. İçi geçmiş tespiti
+  // doğrulanmış yapay zeka modeli tarafından "Geçmiş olabilir" olasılığıyla
+  // zaten yapılır.
   Widget _buildOlcumKartlari() {
-    final hh = result.hhScore;
     final contact = result.contactQuality;
+    final q = result.recordingQuality;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: AppTheme.cardDecoration(),
@@ -460,11 +465,10 @@ class _ResultScreenState extends State<ResultScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _MiniMetric(
-                  icon: Icons.warning_amber_rounded,
-                  label: "İçi boş riski",
-                  value: "%${(hh * 100).toStringAsFixed(0)}",
-                  hint: hh > 0.45 ? "Yüksek" : "Düşük",
-                  warn: hh > 0.45,
+                  icon: Icons.music_note_rounded,
+                  label: "Vuruş enerjisi",
+                  value: result.signalRms.toStringAsFixed(3),
+                  hint: "ses gücü",
                 ),
               ),
             ],
@@ -483,10 +487,11 @@ class _ResultScreenState extends State<ResultScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _MiniMetric(
-                  icon: Icons.music_note_rounded,
-                  label: "Vuruş enerjisi",
-                  value: result.signalRms.toStringAsFixed(3),
-                  hint: "ses gücü",
+                  icon: Icons.verified_rounded,
+                  label: "Kayıt kalitesi",
+                  value: "%${(q * 100).toStringAsFixed(0)}",
+                  hint: q < 0.3 ? "Zayıf — tekrar dene" : "İyi",
+                  warn: q < 0.3,
                 ),
               ),
             ],
@@ -538,6 +543,10 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   // ─────────────────────────── Vi-Liquid (detay) ─────────────────────
+  // NOT: "İçi boş alarmı / şüpheli" uyarıları kaldırıldı — bunlar telefonda
+  // güvenilmez olan SRR f2 ve basitleştirilmiş HH skoruna dayanıyordu ve
+  // doğru kararla çelişip kullanıcıyı yanıltıyordu. Burada yalnızca tarafsız
+  // fiziksel ölçümler (titreşim yankı tonu, ağırlık) bilgi amaçlı gösterilir.
   Widget _buildViLiquidKart() {
     final vl = result.viLiquid!;
     return Container(
@@ -546,32 +555,18 @@ class _ResultScreenState extends State<ResultScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.vibration_rounded,
+              Icon(Icons.vibration_rounded,
                   color: AppTheme.primary, size: 18),
-              const SizedBox(width: 6),
-              const Expanded(
-                child: Text("Titreşim testi",
+              SizedBox(width: 6),
+              Expanded(
+                child: Text("Titreşim ölçümleri (bilgi amaçlı)",
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: AppTheme.slate)),
               ),
-              if (vl.isHollowHeart)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accent.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text("İçi boş alarmı",
-                      style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.accent)),
-                ),
             ],
           ),
           const SizedBox(height: 10),
@@ -582,8 +577,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   icon: Icons.graphic_eq_rounded,
                   label: "Yankı tonu",
                   value: "${vl.f2Hz.toStringAsFixed(0)} Hz",
-                  hint: vl.isHollowHeart ? "düşük → şüpheli" : "normal",
-                  warn: vl.isHollowHeart,
+                  hint: "titreşim cevabı",
                 ),
               ),
               const SizedBox(width: 10),
