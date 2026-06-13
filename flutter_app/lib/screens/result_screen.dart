@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/multimodal_result.dart';
 import '../theme/app_theme.dart';
@@ -21,11 +22,13 @@ import 'home_screen.dart';
 class ResultScreen extends StatefulWidget {
   final MultimodalResult result;
   final String imagePath;
+  final String? audioPath;
 
   const ResultScreen({
     super.key,
     required this.result,
     required this.imagePath,
+    this.audioPath,
   });
 
   @override
@@ -37,6 +40,20 @@ class _ResultScreenState extends State<ResultScreen> {
 
   MultimodalResult get result => widget.result;
   String get imagePath => widget.imagePath;
+
+  Future<void> _shareAudio() async {
+    final path = widget.audioPath;
+    if (path == null || !File(path).existsSync()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ses kaydı bulunamadı")),
+      );
+      return;
+    }
+    await Share.shareXFiles(
+      [XFile(path)],
+      text: "Karpuz vuruş sesi kaydı (analiz için)",
+    );
+  }
 
   // Halk-dostu birleşik sonuç: Vi-Liquid varsa onu öncele, yoksa ML fusion
   bool get _isEdible =>
@@ -88,6 +105,10 @@ class _ResultScreenState extends State<ResultScreen> {
                       if (result.viLiquid != null) ...[
                         const SizedBox(height: 12),
                         _buildViLiquidKart(),
+                      ],
+                      if (widget.audioPath != null) ...[
+                        const SizedBox(height: 12),
+                        _buildShareAudioButton(),
                       ],
                     ],
                     const SizedBox(height: 14),
@@ -271,6 +292,25 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   // ─────────────────────────── Detay Aç/Kapa ─────────────────────────
+  Widget _buildShareAudioButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppTheme.slate,
+          side: BorderSide(color: AppTheme.border),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+        ),
+        icon: const Icon(Icons.ios_share_rounded, size: 18),
+        label: const Text("Ses kaydını paylaş / kaydet",
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        onPressed: _shareAudio,
+      ),
+    );
+  }
+
   Widget _buildDetailsToggle() {
     return TextButton.icon(
       style: TextButton.styleFrom(

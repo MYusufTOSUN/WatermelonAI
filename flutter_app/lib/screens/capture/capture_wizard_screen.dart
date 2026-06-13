@@ -276,6 +276,7 @@ class _CaptureWizardScreenState extends State<CaptureWizardScreen> {
           builder: (_) => ResultScreen(
             result: result,
             imagePath: _photoPath!,
+            audioPath: _audioPath,
           ),
         ),
       );
