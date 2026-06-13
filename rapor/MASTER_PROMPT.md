@@ -160,6 +160,13 @@ Bir saha testinde kesildiğinde olgun (hafif geçmiş) çıkan karpuza Samsung c
 
 > Bu, raporda "mobil akustik ML dağıtımında giriş sinyal yolunun (mikrofon ön-işlemesi) modelden daha kritik olabileceği" ilkesinin somut kanıtı olarak işlenmelidir. Çizelge: aynı karpuz, iPhone (ham) → Olgun, Samsung (ön-işlemeli) → yanlış Ham; düzeltme sonrası ham mikrofon akışı.
 
+### TFLite Çıkarım Belirleyiciliği — Tek-Thread CPU Yapılandırması (rapora değerli mobil dağıtım bulgusu)
+Düşük kaliteli (çok zayıf, alçak-frekans bakımından fakir) bir kayıt üzerinde mobil cihazın (tflite_flutter) çıkarımı ile masaüstü referans hattının (Python TFLite) çıkarımı arasında tutarsızlık gözlemlenmiştir: aynı WAV ve aynı 120-D öznitelik vektörü için telefon farklı bir sınıf vermiştir. Öznitelikler her iki tarafta birebir aynı olduğundan (r=0.995 parite), fark çıkarım katmanından kaynaklanmaktadır. FP16 nicemlenmiş modelin, aşırı büyük öznitelik değerlerinde (örn. MFCC[0] ≈ −665, spektral öznitelikler ≈ 14000) çoklu-thread ve donanım hızlandırma yollarında **donanıma bağlı sayısal değişkenlik** sergilemesi olasıdır.
+
+**Çözüm:** Mobil tarafta TFLite yorumlayıcısı **tek-thread CPU** modunda yapılandırılmıştır (`InterpreterOptions()..threads = 1`). Bu, çıkarımı belirleyici (deterministik) ve yeniden üretilebilir kılarak telefon ile masaüstü referans hattı arasında tutarlılık sağlar. Makul kaliteli kayıtlarda (örn. %56+ kayıt kalitesi) telefon ve backend artık birebir aynı sınıfı üretmektedir; tutarsızlık yalnızca kalite eşiğinin altındaki dejenere kayıtlarda gözlenmiş, bu kayıtlar ayrıca bir kayıt kalite kapısıyla reddedilmiştir.
+
+> Rapora ders: Mobil ML dağıtımında nicemlenmiş (FP16) modellerin çıkarımı, hedef donanım ve thread yapılandırmasına duyarlı olabilir; akademik/referans hattıyla birebir tutarlılık için belirleyici (tek-thread CPU) çıkarım tercih edilmelidir.
+
 ### Vi-Liquid Aktif Haptik Mobil Dağıtım (Fiziksel Cihaz Testi)
 v12 sürümü Samsung Galaxy seri Android cihaz üzerinde test edildi. Karpuz olmayan bir referans nesne (1L su şişesi) ile sistem davranışı:
 - ML Fusion DNN tahmini: "Olgun %100" (visual mean kullanımı + sınıf bias)
