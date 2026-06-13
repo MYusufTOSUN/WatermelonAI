@@ -933,6 +933,51 @@ class DspUtils {
     return [peakFreq, db];
   }
 
+  /// Knock recording quality (0-1). Combines overall level (RMS) and the
+  /// fraction of energy in the watermelon resonance band (50-250 Hz).
+  ///
+  /// A clean knock has RMS ~0.02-0.05 and 50-250 Hz energy ratio ~0.10-0.40.
+  /// A poor capture (too quiet, mostly high-freq handling noise) has RMS
+  /// <0.01 and band ratio <0.05, which pushes the acoustic features far out
+  /// of the training distribution and yields unreliable predictions.
+  ///
+  /// Returns ({quality: 0-1, rms, lowBandRatio}).
+  static ({double quality, double rms, double lowBandRatio}) knockQuality(
+    Float64List audio, {
+    int sr = audioSampleRate,
+  }) {
+    if (audio.length < 64) {
+      return (quality: 0.0, rms: 0.0, lowBandRatio: 0.0);
+    }
+    double sumSq = 0.0;
+    for (final v in audio) {
+      sumSq += v * v;
+    }
+    final rms = math.sqrt(sumSq / audio.length);
+
+    final fft = computeFullAudioMag(audio);
+    double low = 0.0, total = 0.0;
+    for (int k = 0; k < fft.mags.length; k++) {
+      final f = k * sr / fft.fftSize;
+      if (f < 20 || f > 8000) continue;
+      final e = fft.mags[k];
+      total += e;
+      if (f >= 50 && f <= 250) low += e;
+    }
+    final lowBandRatio = total > 1e-12 ? low / total : 0.0;
+
+    // Map each metric to 0-1 with soft thresholds, then combine.
+    //   rms: 0.008 (poor) → 0.020 (good)
+    //   band: 0.05 (poor) → 0.12 (good)
+    final rmsScore = ((rms - 0.008) / (0.020 - 0.008)).clamp(0.0, 1.0);
+    final bandScore =
+        ((lowBandRatio - 0.05) / (0.12 - 0.05)).clamp(0.0, 1.0);
+    // Both must be decent — use the weaker one (min) so a single failure
+    // (too quiet OR no knock resonance) flags low quality.
+    final quality = math.min(rmsScore, bandScore);
+    return (quality: quality, rms: rms, lowBandRatio: lowBandRatio);
+  }
+
   /// Spectral entropy from precomputed magnitudes (Shannon, normalized).
   static double spectralEntropyFromMag(Float64List mags) {
     if (mags.isEmpty) return 0.0;

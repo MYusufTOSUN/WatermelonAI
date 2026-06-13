@@ -114,6 +114,10 @@ class _ResultScreenState extends State<ResultScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (result.isLowQuality) ...[
+                      _buildQualityWarning(),
+                      const SizedBox(height: 12),
+                    ],
                     _buildBigVerdict(),
                     const SizedBox(height: 16),
                     _buildImage(),
@@ -318,6 +322,44 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   // ─────────────────────────── Detay Aç/Kapa ─────────────────────────
+  Widget _buildQualityWarning() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.amber, width: 1.2),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.mic_off_rounded,
+              color: Color(0xFFE65100), size: 26),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Vuruş kaydı zayıf",
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFE65100))),
+                SizedBox(height: 3),
+                Text(
+                  "Ses çok düşük yakalandı, sonuç güvenilir olmayabilir. "
+                  "Mikrofonu karpuza yaklaştırıp parmak boğumuyla daha sert "
+                  "vur ve tekrar dene.",
+                  style: TextStyle(
+                      fontSize: 12, color: Color(0xFF5D4037), height: 1.35),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPdfButton() {
     return SizedBox(
       width: double.infinity,

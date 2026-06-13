@@ -48,6 +48,8 @@ flutter:
   assets:
     - assets/models/fusion_model_fp16.tflite
     - assets/models/visual_classifier_fp16.tflite
+    - assets/fonts/Roboto-Regular.ttf
+    - assets/fonts/Roboto-Bold.ttf
     - assets/test/wm1_chu1.wav
     - assets/test/wm1_chu1_python_features.json
     - assets/samples/

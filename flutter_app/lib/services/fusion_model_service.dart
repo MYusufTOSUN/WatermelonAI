@@ -21,7 +21,13 @@ class FusionModelService {
 
   Future<void> loadModel() async {
     if (_interpreter != null) return;
-    _interpreter = await Interpreter.fromAsset(_modelAsset);
+    // Tek-thread CPU: telefon ile masaustu (Python TFLite) arasinda BIREBIR
+    // ayni sonuc icin. Coklu-thread / donanim delegeleri FP16 modelde, kotu
+    // kayitlardan gelen asiri buyuk oznitelik degerlerinde (mfcc0~-665,
+    // spektral~14000) kararsiz/farkli sonuc verebiliyordu.
+    final options = InterpreterOptions()..threads = 1;
+    _interpreter =
+        await Interpreter.fromAsset(_modelAsset, options: options);
     _interpreter!.allocateTensors();
   }
 

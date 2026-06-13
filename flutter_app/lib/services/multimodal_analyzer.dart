@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/multimodal_result.dart';
 import 'audio_recorder_service.dart';
+import 'dsp/dsp_utils.dart';
 import 'feature_extractors/isolate_workers.dart';
 import 'fusion_model_service.dart';
 import 'sensor_recorder_service.dart';
@@ -97,6 +98,7 @@ class MultimodalAnalyzer {
     final hhScore = acousticHh.localHhScore;
     final contactQuality = hapticVec[6];
     final signalRms = _rms(audio);
+    final quality = DspUtils.knockQuality(audio);
 
     return MultimodalResult(
       fusion: fusion,
@@ -106,6 +108,8 @@ class MultimodalAnalyzer {
       hhScore: hhScore,
       contactQuality: contactQuality,
       signalRms: signalRms,
+      recordingQuality: quality.quality,
+      lowBandRatio: quality.lowBandRatio,
     );
   }
 

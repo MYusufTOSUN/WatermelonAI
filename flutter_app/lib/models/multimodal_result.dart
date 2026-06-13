@@ -14,6 +14,8 @@ class MultimodalResult {
   final double hhScore;
   final double contactQuality;
   final double signalRms;
+  final double recordingQuality; // 0-1 knock capture quality
+  final double lowBandRatio; // 50-250 Hz energy fraction
   final DateTime timestamp;
 
   MultimodalResult({
@@ -24,8 +26,13 @@ class MultimodalResult {
     required this.hhScore,
     required this.contactQuality,
     required this.signalRms,
+    this.recordingQuality = 1.0,
+    this.lowBandRatio = 0.0,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
+
+  /// True if the knock recording is too weak/noisy to trust the verdict.
+  bool get isLowQuality => recordingQuality < 0.30;
 
   /// Helper: textual diagnosis line based on f2 and contact quality.
   String get diagnosticLine {

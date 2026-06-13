@@ -454,7 +454,9 @@ class _CaptureWizardScreenState extends State<CaptureWizardScreen> {
             stepNumber: 2,
             title: "Karpuza parmağınla vur",
             subtitle:
-                "Mikrofonu karpuza yaklaştır, 2-3 kez sertçe vur. Telefon sesi 3 saniye kaydeder.",
+                "Telefonun ALT kısmındaki mikrofonu karpuza neredeyse değdir, "
+                "parmak boğumunla 3-4 kez SERTÇE vur. Vuruş ne kadar net ve "
+                "tok olursa sonuç o kadar güvenilir olur (3 sn kayıt).",
           ),
           const SizedBox(height: 20),
           Expanded(

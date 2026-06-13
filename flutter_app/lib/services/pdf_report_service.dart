@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -20,7 +21,15 @@ class PdfReportService {
     required MultimodalResult result,
     required String imagePath,
   }) async {
-    final doc = pw.Document();
+    // Türkçe karakter destekli font (Roboto) yükle — varsayılan PDF fontu
+    // ş/ı/ğ/ç/İ glifleri içermiyor (kutu olarak çıkıyordu).
+    final regular = pw.Font.ttf(
+        await rootBundle.load("assets/fonts/Roboto-Regular.ttf"));
+    final bold =
+        pw.Font.ttf(await rootBundle.load("assets/fonts/Roboto-Bold.ttf"));
+    final theme = pw.ThemeData.withFont(base: regular, bold: bold);
+
+    final doc = pw.Document(theme: theme);
     final fusion = result.fusion;
     final vl = result.viLiquid;
 
@@ -136,6 +145,8 @@ class PdfReportService {
             ["f2 genliği", "${result.f2Db.toStringAsFixed(1)} dB"],
             ["İçi boş riski (akustik)", "%${(result.hhScore * 100).toStringAsFixed(0)}"],
             ["Vuruş enerjisi (sinyal RMS)", result.signalRms.toStringAsFixed(4)],
+            ["Düşük frekans (tok ses) oranı", "%${(result.lowBandRatio * 100).toStringAsFixed(0)}"],
+            ["Kayıt kalitesi", "%${(result.recordingQuality * 100).toStringAsFixed(0)}${result.isLowQuality ? " (zayıf — tekrar önerilir)" : ""}"],
           ]),
           pw.SizedBox(height: 14),
 
