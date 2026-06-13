@@ -105,6 +105,22 @@ Kök neden: **Android cihazların varsayılan ses kaydı (defaultSource / voiceR
 
 **Önemli metodolojik kazanım:** Bu vaka, mobil akustik ML dağıtımında modelin değil **giriş sinyal yolunun** dikkatle kontrol edilmesi gerektiğini göstermektedir; aynı karpuz iki farklı cihazda farklı sınıflanabilir ve fark tamamen cihazın ses ön-işlemesinden kaynaklanabilir.
 
+## v20 Güncellemesi — Asıl Saha Hatası: Vi-Liquid Override + PDF Rapor
+
+v18/v19 saha testinde, kesildiğinde olgun çıkan bir karpuza uygulama "ALMA / İçi boş olabilir" demiştir. Kullanıcının uygulamadan **dışa aktardığı gerçek WAV** (`share_plus` ile) hem Dart hem Python pipeline'ında **f2=102 Hz ile birebir aynı** öznitelikleri üretmiş ve fusion modeli bu kayda **"Tam kıvamında" (Olgun)** demiştir — yani ses kaydı, matematik ve model tümü doğru.
+
+Asıl kök neden: **Vi-Liquid Hollow Heart tetiği, doğru DNN kararını eziyordu.** Ekrandaki "Geçmiş %100" ham model çıktısı değil, fiziksel kuralın zorla değiştirdiği sonuçtu. Tetik koşulları:
+- SRR f2 = 60 Hz < 134 Hz (cubic interpolation enerjiyi 50 Hz tabanına sıkıştırdığı için telefonda güvenilmez — zaten dökümante edilmişti)
+- Canlı HH skoru ≥ 0.45 (basitleştirilmiş detektör sessiz kayıtta yüksek "boş" skoru veriyor)
+
+İki güvenilmez ölçüm birlikte yanlış tetiklenince iyi karpuz "İçi Geçmiş" işaretleniyordu.
+
+**Düzeltme (v20):** Nihai karar artık **yalnızca doğrulanmış DNN'den** gelir. DNN zaten 3-sınıflı ve gerçek HH-etiketli veriyle eğitildiği için içi geçmiş tespitini kendi yapar. Vi-Liquid metrikleri (f2, EI, içi boş riski) **bilgi amaçlı** gösterilir, kararı **etkilemez**. `MobileFusionEngine.fuse()` artık DNN argmax döndürür; `isHollowHeart` yalnızca "titreşim cevabı zayıf" bilgilendirici bayrağıdır.
+
+**Ek (v20):** Sonuç ekranına "Raporu PDF olarak paylaş" özelliği eklendi — tüm ölçümleri (karar, güven, sınıf olasılıkları, akustik f2/dB/HH/RMS, temas kalitesi, Vi-Liquid f2/EI/kütle, foto, tarih) tek belgede toplar (`pdf` + `share_plus`).
+
+**Metodolojik ders:** ML modeli ile fiziksel kural çeliştiğinde, telefon donanımında güvenilmez olan fiziksel ölçümün doğrulanmış modeli ezmesine izin verilmemelidir. Fiziksel ölçüm destekleyici bilgi olarak kalmalıdır.
+
 ## Sonuç
 
 Pipeline **%100 gerçek**, sahte placeholder yok. Modeller eğitilmiş, TFLite'lar doğrulanmış, telefonda gerçek hesaplama yapılıyor. Bilinçli yapılan basitleştirmeler (SRR, kütle, HH nötr-ikame) belgelenmiş ve akademik olarak savunulabilir. v17 itibarıyla telefonun ürettiği akustik feature'lar backend ile fonksiyonel olarak özdeştir ve bu iddia `tool/parity_check.dart` ile her an yeniden doğrulanabilir.

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/multimodal_result.dart';
+import '../services/pdf_report_service.dart';
 import '../theme/app_theme.dart';
 import 'capture/capture_wizard_screen.dart';
 import 'home_screen.dart';
@@ -41,6 +42,8 @@ class _ResultScreenState extends State<ResultScreen> {
   MultimodalResult get result => widget.result;
   String get imagePath => widget.imagePath;
 
+  bool _pdfBusy = false;
+
   Future<void> _shareAudio() async {
     final path = widget.audioPath;
     if (path == null || !File(path).existsSync()) {
@@ -53,6 +56,27 @@ class _ResultScreenState extends State<ResultScreen> {
       [XFile(path)],
       text: "Karpuz vuruş sesi kaydı (analiz için)",
     );
+  }
+
+  Future<void> _sharePdf() async {
+    if (_pdfBusy) return;
+    setState(() => _pdfBusy = true);
+    try {
+      final file = await PdfReportService()
+          .generate(result: result, imagePath: imagePath);
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: "Karpuz analiz raporu",
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("PDF oluşturulamadı: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _pdfBusy = false);
+    }
   }
 
   // Halk-dostu birleşik sonuç: Vi-Liquid varsa onu öncele, yoksa ML fusion
@@ -95,6 +119,8 @@ class _ResultScreenState extends State<ResultScreen> {
                     _buildImage(),
                     const SizedBox(height: 16),
                     _buildSimpleStatusCard(),
+                    const SizedBox(height: 12),
+                    _buildPdfButton(),
                     const SizedBox(height: 12),
                     _buildDetailsToggle(),
                     if (_showDetails) ...[
@@ -292,6 +318,35 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   // ─────────────────────────── Detay Aç/Kapa ─────────────────────────
+  Widget _buildPdfButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppTheme.primary.withOpacity(0.10),
+          foregroundColor: AppTheme.primary,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14)),
+        ),
+        icon: _pdfBusy
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2.2, color: AppTheme.primary),
+              )
+            : const Icon(Icons.picture_as_pdf_rounded, size: 20),
+        label: Text(
+          _pdfBusy ? "Hazırlanıyor..." : "Raporu PDF olarak paylaş",
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        ),
+        onPressed: _pdfBusy ? null : _sharePdf,
+      ),
+    );
+  }
+
   Widget _buildShareAudioButton() {
     return SizedBox(
       width: double.infinity,

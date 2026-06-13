@@ -29,8 +29,9 @@ class ViLiquidResult {
     required this.combinedPOverripe,
   });
 
-  /// Binary verdict from combined prediction
-  bool get isEdible => finalClassId == 1 && !isHollowHeart;
+  /// Binary verdict — DNN kararina dayanir. isHollowHeart KARARI ETKILEMEZ
+  /// (yalnizca bilgi amacli "titresim cevabi zayif" uyarisidir).
+  bool get isEdible => finalClassId == 1;
   String get verdict => isEdible ? "Yenir" : "Yenmez";
   double get verdictConfidence =>
       isEdible ? combinedPRipe : (combinedPImmature + combinedPOverripe);
@@ -53,7 +54,6 @@ class ViLiquidResult {
       isEdible ? "Bu karpuz iyi gibi" : "Bu karpuz iyi değil";
 
   String get simpleLabel {
-    if (isHollowHeart) return "İçi boş olabilir";
     switch (finalClassId) {
       case 0:
         return "Henüz ham";
@@ -68,14 +68,11 @@ class ViLiquidResult {
 
   /// Sade neden, halk diline yakın
   String get simpleReason {
-    if (isHollowHeart) {
-      return "Vuruş ve titreşim cevabı boş bir karpuza benziyor.";
-    }
     switch (finalClassId) {
       case 0:
         return "Daha sert ve ham hissediliyor, bekleyebilir.";
       case 1:
-        return "Sesi ve titreşimi olgun bir karpuza uyuyor.";
+        return "Sesi olgun bir karpuza uyuyor.";
       case 2:
         return "Yumuşaklık ve cevap zayıf, içi geçmiş olabilir.";
       default:

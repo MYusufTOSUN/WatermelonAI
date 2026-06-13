@@ -47,32 +47,24 @@ class MobileFusionEngine {
         (f2Hz > 0 && f2Hz < f2HollowThreshold) &&
         acousticHhScore >= hhConfirmThreshold;
 
-    String finalClass;
-    int finalClassId;
-    if (isHollowHeart) {
-      finalClass = "İçi Geçmiş (Hollow Heart Tetikleyici)";
-      finalClassId = 2;
-    } else {
-      final candidates = [
-        ("Olgunlaşmamış", pImmature, 0),
-        ("Olgun", pRipe, 1),
-        ("İçi Geçmiş", pOverripe, 2),
-      ];
-      candidates.sort((a, b) => b.$2.compareTo(a.$2));
-      finalClass = candidates.first.$1;
-      finalClassId = candidates.first.$3;
-    }
-
-    // Pseudo-probability derived from the combined score for UI display.
-    // We blend the original probs with the EI signal: higher EI pushes
-    // toward "Olgun", below threshold pushes toward defective.
-    final adjusted = _adjustProbs(
-      pImmature: pImmature,
-      pRipe: pRipe,
-      pOverripe: pOverripe,
-      eiNorm: eiNorm,
-      isHollow: isHollowHeart,
-    );
+    // KARAR HER ZAMAN DNN'DEN GELIR. Vi-Liquid fiziksel kurali (SRR f2 + EI)
+    // yalnizca BILGI AMACLIDIR ve sonucu EZMEZ.
+    //
+    // Gerekce: telefon donaniminda SRR f2 (cubic interpolation) enerjiyi
+    // 50 Hz tabanina sikistirdigi icin guvenilmez; basitlestirilmis HH skoru
+    // da sessiz/gurultulu kayitta yuksek cikabiliyor. Bu ikisi birlikte iyi
+    // bir karpuzu yanlislikla "Ici Gecmis" isaretliyordu (saha hatasi).
+    // DNN zaten 3-sinifli ve gercek HH-etiketli veriyle egitildi; ici gecmis
+    // tespitini kendi yapar. Vi-Liquid metrikleri (f2, EI, ici-bos riski)
+    // sonuc ekraninda destekleyici olcum olarak gosterilir.
+    final candidates = [
+      ("Olgunlaşmamış", pImmature, 0),
+      ("Olgun", pRipe, 1),
+      ("İçi Geçmiş", pOverripe, 2),
+    ];
+    candidates.sort((a, b) => b.$2.compareTo(a.$2));
+    final finalClass = candidates.first.$1;
+    final finalClassId = candidates.first.$3;
 
     return ViLiquidResult(
       f2Hz: f2Hz,
@@ -82,10 +74,13 @@ class MobileFusionEngine {
       finalScore: scoreFinal,
       finalClassId: finalClassId,
       finalClassLabel: finalClass,
+      // Bilgi amacli bayrak: titresim cevabi dusuk mu? (karari ETKILEMEZ,
+      // sadece "titresim cevabi zayif" uyarisi olarak gosterilir)
       isHollowHeart: isHollowHeart,
-      combinedPImmature: adjusted[0],
-      combinedPRipe: adjusted[1],
-      combinedPOverripe: adjusted[2],
+      // Olasiliklar dogrudan DNN ciktisidir — override yok.
+      combinedPImmature: pImmature,
+      combinedPRipe: pRipe,
+      combinedPOverripe: pOverripe,
     );
   }
 
@@ -99,28 +94,5 @@ class MobileFusionEngine {
     final clamped = ei.clamp(eiMin, eiMax);
     if (eiMax <= eiMin) return 0.0;
     return (clamped - eiMin) / (eiMax - eiMin);
-  }
-
-  /// Apply EI / hollow-heart adjustments to original probabilities so the
-  /// combined verdict in the UI shows a coherent confidence number.
-  List<double> _adjustProbs({
-    required double pImmature,
-    required double pRipe,
-    required double pOverripe,
-    required double eiNorm,
-    required bool isHollow,
-  }) {
-    if (isHollow) {
-      // Push overripe up
-      final base = 0.7 + 0.3 * (1 - eiNorm); // 0.7-1.0
-      final remainder = 1.0 - base;
-      return [remainder * 0.5, remainder * 0.5, base];
-    }
-    // Otherwise blend: EI boost ripe channel
-    final boost = (eiNorm * 0.25).clamp(0.0, 0.25);
-    final pRipeAdj = (pRipe + boost).clamp(0.0, 1.0);
-    final scale = (pImmature + pRipe + pOverripe + boost);
-    if (scale <= 1e-6) return [pImmature, pRipe, pOverripe];
-    return [pImmature / scale, pRipeAdj / scale, pOverripe / scale];
   }
 }
