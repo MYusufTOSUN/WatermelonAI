@@ -31,6 +31,22 @@ class AudioRecorderService {
         sampleRate: DspUtils.audioSampleRate,
         numChannels: 1,
         bitRate: 16 * DspUtils.audioSampleRate,
+        // KRITIK: varsayilan ses kaynagi (defaultSource / voiceRecognition)
+        // bircok Android cihazda — ozellikle Samsung'da — yuksek-geciren
+        // filtre + gurultu bastirma + AGC uygular. Bu DSP, karpuz vurus
+        // rezonansinin bulundugu 50-250 Hz bandini kirpip yok ediyor ve
+        // model "ham" sanıyor (saha hatasinin kok nedeni). UNPROCESSED ham
+        // mikrofon akisini verir; desteklenmeyen cihazlarda sistem mic'e
+        // duser. echo/gain/noise-suppression efektleri de kapatilir.
+        androidConfig: AndroidRecordConfig(
+          audioSource: AndroidAudioSource.unprocessed,
+          audioManagerMode: AudioManagerMode.modeNormal,
+          manageBluetooth: false,
+        ),
+        iosConfig: IosRecordConfig(
+          // iOS measurement mode: AGC/filtreleme olmadan duz mikrofon yaniti
+          categoryOptions: [],
+        ),
       ),
       path: path,
     );

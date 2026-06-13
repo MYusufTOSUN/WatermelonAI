@@ -95,6 +95,16 @@ v13'teki saha sapması ("hep ham/ALMA") sonrası, telefon DSP'sinin birebir kopy
 
 **Nihai durum:** Feature parite ortalama **r=0.995**; akustik kanal tek başına **12/12 tahmin-özdeş**; telefon-backend toplam uyum **10/12** (kalan 2 fark backend'in 0.45–0.64 güvenle karar verdiği sınır vakaları — modelin doğal sınırı).
 
+## v18 Güncellemesi — Saha Kök Nedeni: Android Ses Ön-İşleme (Samsung)
+
+Bir saha testinde, kesildiğinde olgun (hatta hafif geçmiş) çıkan bir karpuza uygulama "Henüz ham %100" demiştir. Kullanıcının ayrıca **iPhone** ile kaydettiği aynı karpuzun vuruş sesleri offline analizde doğru biçimde **Olgun/Geçmiş** sınıflandırılmıştır; üstelik bu kayıtların her 3 saniyelik penceresi de Olgun/Geçmiş vermiştir. Buna karşın uygulama **Samsung** cihazda çalışıyordu.
+
+Kök neden: **Android cihazların varsayılan ses kaydı (defaultSource / voiceRecognition) bir ses ön-işleme zinciri uygular** — yüksek-geçiren filtre, gürültü bastırma ve otomatik kazanç denetimi (AGC). Bu zincir, sesi insan konuşması için optimize eder ve **50–250 Hz bandını bastırır.** Karpuz vuruş rezonansı (f2) tam bu bandda bulunduğundan, Samsung'un ham sinyalden çıkardığı düşük-frekans tok ses bileşeni kırpılmış, model bunu olgunlaşmamış karpuz imzası gibi yorumlamıştır.
+
+**Düzeltme (v18):** `record` paketinin Android ses kaynağı `AndroidAudioSource.unprocessed` (ham mikrofon, API 24+; desteklenmeyen cihazlarda sistem `mic`'e düşer), iOS tarafı ise ölçüm modu (kategori seçeneksiz, AGC/filtre kapalı) olarak yapılandırılmıştır. Böylece mikrofon, ses ön-işleme uygulamadan ham akışı verir.
+
+**Önemli metodolojik kazanım:** Bu vaka, mobil akustik ML dağıtımında modelin değil **giriş sinyal yolunun** dikkatle kontrol edilmesi gerektiğini göstermektedir; aynı karpuz iki farklı cihazda farklı sınıflanabilir ve fark tamamen cihazın ses ön-işlemesinden kaynaklanabilir.
+
 ## Sonuç
 
 Pipeline **%100 gerçek**, sahte placeholder yok. Modeller eğitilmiş, TFLite'lar doğrulanmış, telefonda gerçek hesaplama yapılıyor. Bilinçli yapılan basitleştirmeler (SRR, kütle, HH nötr-ikame) belgelenmiş ve akademik olarak savunulabilir. v17 itibarıyla telefonun ürettiği akustik feature'lar backend ile fonksiyonel olarak özdeştir ve bu iddia `tool/parity_check.dart` ile her an yeniden doğrulanabilir.

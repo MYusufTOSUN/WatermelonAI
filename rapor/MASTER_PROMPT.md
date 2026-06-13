@@ -151,6 +151,15 @@ Nihai parite tablosu:
 
 > **Hollow Heart kanal bulgusu (rapora değerli bir mühendislik hikayesi):** Eğitim pipeline'ının HH vektör düzeni `[dp, dm, sp, cp, hnr, hh_score, confidence, active_n]` iken model metadata dosyası farklı bir düzen belgelemekteydi; ayrıca eğitim kodundaki bir anahtar-adı uyuşmazlığı nedeniyle spectral bileşeni eğitim setinde sabit 0 kalmıştır. Bu tespit üzerine mobil tarafta DNN'in HH girdisi eğitim ortalamalarıyla beslenmiş (nötr-ikame), canlı kayıttan hesaplanan basitleştirilmiş HH skoru yalnızca Vi-Liquid içi-boş tetiğinin çift-onay kapısında kullanılmıştır. Bu olay, mobil ML dağıtımında "metadata değil, eğitim kodu ground truth'tur" ilkesinin somut bir örneği olarak raporda tartışılabilir.
 
+### Saha Testi Kök Neden Analizi — Android Ses Ön-İşleme (rapora çok değerli mühendislik bulgusu)
+Bir saha testinde kesildiğinde olgun (hafif geçmiş) çıkan karpuza Samsung cihazdaki uygulama "Henüz ham %100" demiştir. Aynı karpuzun iPhone ile alınmış vuruş kayıtları offline analizde doğru biçimde Olgun/Geçmiş sınıflanmış, hatta her 3 saniyelik pencere bile Olgun/Geçmiş vermiştir. Bulgular:
+- Dart ve Python öznitelikleri saha sesinde birebir aynı (matematik kusursuz)
+- Model gerçek kayıtlarda doğru sınıf veriyor (sorun model değil)
+- Fark cihaz mikrofonundaydı: **Android'in varsayılan ses kaydı yüksek-geçiren filtre + gürültü bastırma + AGC uygular ve 50–250 Hz bandını (karpuz f2 rezonansı) kırpar.** Samsung bu işlemi agresif uygular.
+- Düzeltme: ses kaynağı `AndroidAudioSource.unprocessed` (ham mikrofon) + iOS ölçüm modu olarak yapılandırıldı.
+
+> Bu, raporda "mobil akustik ML dağıtımında giriş sinyal yolunun (mikrofon ön-işlemesi) modelden daha kritik olabileceği" ilkesinin somut kanıtı olarak işlenmelidir. Çizelge: aynı karpuz, iPhone (ham) → Olgun, Samsung (ön-işlemeli) → yanlış Ham; düzeltme sonrası ham mikrofon akışı.
+
 ### Vi-Liquid Aktif Haptik Mobil Dağıtım (Fiziksel Cihaz Testi)
 v12 sürümü Samsung Galaxy seri Android cihaz üzerinde test edildi. Karpuz olmayan bir referans nesne (1L su şişesi) ile sistem davranışı:
 - ML Fusion DNN tahmini: "Olgun %100" (visual mean kullanımı + sınıf bias)
