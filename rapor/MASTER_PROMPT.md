@@ -167,6 +167,21 @@ Düşük kaliteli (çok zayıf, alçak-frekans bakımından fakir) bir kayıt ü
 
 > Rapora ders: Mobil ML dağıtımında nicemlenmiş (FP16) modellerin çıkarımı, hedef donanım ve thread yapılandırmasına duyarlı olabilir; akademik/referans hattıyla birebir tutarlılık için belirleyici (tek-thread CPU) çıkarım tercih edilmelidir.
 
+### Nicemleme Kararı: FP16 vs FP32 Ampirik Karşılaştırması (rapora "varsayma, ölç" örneği)
+Mobil tutarlılığı artırmak için fusion modelini FP16'dan FP32'ye geçirme hipotezi değerlendirilmiştir. Genel beklenti FP32'nin daha "sadık" referans olduğu yönündedir; ancak karar **varsayımla değil, ölçümle** verilmiştir. Her iki TFLite varyantı, etiketli eğitim kümesi (4671 örnek) ve gerçek saha kayıtları üzerinde karşılaştırılmıştır:
+
+| Model | Eğitim Doğruluğu | Tahmin Dağılımı (Ham/Olgun/Geçmiş) |
+|---|---|---|
+| **FP16 (dağıtılan)** | **%99.9** | %31 / %58 / %10 (gerçek etiket dağılımıyla birebir) |
+| FP32 | %57.6 | %0 / %98 / %2 (çoğunluk sınıfına çökmüş) |
+| Gerçek etiketler | — | %31 / %58 / %10 |
+
+**Bulgu:** Depodaki FP32 dönüşümü kusurludur — model neredeyse her girdiye çoğunluk sınıfı "Olgun" demekte (%98), doğruluğu yalnızca %57.6'ya düşmektedir (öğrenilmiş ayırt edicilik yok). Buna karşın FP16 modeli %99.9 eğitim doğruluğu ve gerçekle örtüşen sınıf dağılımı sergilemektedir. İki model eğitim kümesinde %44 oranında farklı sınıf üretmiş, bu fark tamamen bozuk FP32 dönüşümünden kaynaklanmıştır.
+
+**Karar:** FP32'ye GEÇİLMEMİŞTİR. FP16 modeli üretimde korunmuştur. FP32'ye geçiş, doğru çalışan modeli çökmüş bir varyantla değiştirerek sistemi felç edecekti.
+
+> Rapora ders: "Daha yüksek hassasiyet her zaman daha iyidir" sezgisi yanıltıcı olabilir; nicemleme/dönüşüm çıktıları dağıtımdan önce etiketli veri üzerinde doğrulanmalıdır. Bu projede her kritik karar (model seçimi, nicemleme, öznitelik düzeltmeleri) varsayım yerine ölçümle alınmıştır.
+
 ### Vi-Liquid Aktif Haptik Mobil Dağıtım (Fiziksel Cihaz Testi)
 v12 sürümü Samsung Galaxy seri Android cihaz üzerinde test edildi. Karpuz olmayan bir referans nesne (1L su şişesi) ile sistem davranışı:
 - ML Fusion DNN tahmini: "Olgun %100" (visual mean kullanımı + sınıf bias)
