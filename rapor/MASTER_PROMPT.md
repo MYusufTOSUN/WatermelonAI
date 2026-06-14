@@ -193,6 +193,18 @@ v12 sürümü Samsung Galaxy seri Android cihaz üzerinde test edildi. Karpuz ol
 
 > Bu vaka, çelişen sinyallerin (görsel olgun + akustik olgun + zayıf titreşim cevabı) **fiziksel kural ile çözüldüğünü** ve sistemin sağlıklı çalıştığını kanıtlamaktadır.
 
+### Saha Testi: Ön Bulgular ve Devam Eden Çalışma (rapora DÜRÜST çerçeve ile yaz)
+
+Sistemin asıl bilimsel değerlendirmesi 19 karpuzluk Qilin veri seti üzerinde LOWO çapraz doğrulamasıyla (RFC 2-sınıf %61.5) yapılmıştır; bu metrik raporun **ana niceliksel sonucudur** ve fiziksel saha testi gerektirmez. Buna ek olarak, mobil uygulamanın gerçek dünyada davranışını gözlemlemek üzere **saha testi süreci başlatılmıştır**. Bu süreç bu çalışmanın sonlarına doğru başladığından eldeki saha verisi **ön niteliktedir** ve zamanla genişletilecektir.
+
+Mevcut ön bulgular:
+- **Karpuz olmayan referans (1L su şişesi):** Sistem, çelişen sinyalleri fiziksel kuralla çözerek bu nesneyi "alma" olarak işaretlemiş, beklenen davranışı göstermiştir (yukarıdaki Vi-Liquid cihaz testi).
+- **Gerçek karpuz örnekleri:** Sınırlı sayıda gerçek karpuz mobil uygulamayla test edilmekte, kesimle (Geçmiş ekranı üzerinden gerçek sınıf işaretlemesi) doğrulanmaktadır. Test edilen örnekler büyük ölçüde iyi/olgun karpuzlardan oluştuğundan, bu ölçümler sistemin **iyi karpuzları doğru kabul etme oranını (doğru pozitif eğilimi)** gösterir; kötü karpuzları ayırt etme (ayırt edicilik) performansının kapsamlı değerlendirilmesi, dengeli (kusurlu örnek içeren) bir saha kümesiyle **gelecek çalışmaya bırakılmıştır.**
+
+**Metodolojik dürüstlük notu (rapora aynen yansıt):** Saha örnekleminin sınırlı ve büyük ölçüde olgun karpuzlardan oluşması nedeniyle, az örnekten genel bir "saha doğruluğu yüzdesi" iddia edilMEMEKTEDİR. Bu, az örnekli istatistiğin yanıltıcılığından kaçınan bilinçli bir tercihtir. Saha testi, asıl niceliksel sonuç olan LOWO doğruluğunu **tamamlayan**, onun yerini almayan bir doğrulama katmanı olarak sunulmalıdır. Saha örneklemi büyüdükçe sonuçlar güncellenecektir.
+
+> Rapora yazım: Bu bölümü 4. bölümde "Saha Testi: Ön Bulgular" alt başlığı olarak işle; abartısız, ölçülü bir dille yaz. "Sistematik saha doğrulaması başlatılmış olup, kesimle doğrulanmış geniş ve dengeli bir karpuz kümesiyle genişletilmesi gelecek çalışma kapsamındadır" cümlesini içer. Asla az örnekten yüksek bir saha doğruluğu rakamı uydurma.
+
 ### Performans (v13 Optimizasyonu)
 | İyileştirme | Etki |
 |---|---|
@@ -325,6 +337,7 @@ Tahribatsız test ihtiyacı; mevcut çözümlerin (laboratuvar Brix metresi, aku
 - 19 karpuzluk Qilin veri seti, subject leakage doğal limit
 - Qilin veri setinde haptik ham veri bulunmaması → ML fusion haptic'i tek başına kullanamaz, fiziksel kural devreye sokuldu
 - Telefon LRA motor frekansının kullanıcı tarafından kontrol edilememesi (cihaz bağımlı)
+- Fiziksel saha testi bu çalışmanın sonlarında başlatılmış olup eldeki saha verisi ön niteliktedir; kesimle doğrulanmış, dengeli (kusurlu örnek içeren) geniş bir saha kümesiyle genişletilmesi sürmektedir
 
 **1.6. Tezin Organizasyonu**
 2. bölüm literatür taraması, 3. bölüm materyal ve yöntem, 4. bölüm sonuçlar, 5. bölüm sonuç ve öneriler.
@@ -449,17 +462,24 @@ Tahribatsız test ihtiyacı; mevcut çözümlerin (laboratuvar Brix metresi, aku
 - **Şekil 4.4**: Result ekranı screenshot
 - Hollow Heart tetiğinin doğru aktivasyonu — sistem sağlığı yorumu
 
-**4.7. Performans ve Kullanıcı Deneyimi**
-- 4.7.1. v13 optimizasyonu (1-2 dk → 20-30 sn)
-- **Çizelge 4.5**: Optimizasyon adımları ve hızlanma
-- 4.7.2. Halk-dostu UI dönüşümü
+**4.7. Saha Testi: Ön Bulgular**
+- 4.7.1. Karpuz olmayan referans (su şişesi) doğru reddi
+- 4.7.2. Gerçek karpuz ön testleri — kesimle doğrulama, büyük ölçüde olgun örneklem → doğru pozitif eğilimi
+- 4.7.3. Metodolojik sınır: az örnekten saha doğruluğu yüzdesi iddia edilmemesi; ayırt edicilik değerlendirmesinin gelecek çalışmaya bırakılması
+- (DİKKAT: Bu alt başlığı ölçülü ve dürüst yaz; LOWO %61.5'i ana metrik olarak vurgula, saha testini tamamlayıcı katman olarak sun. Bkz. "Saha Testi: Ön Bulgular ve Devam Eden Çalışma" bölümü.)
+
+**4.8. Performans ve Kullanıcı Deneyimi**
+- 4.8.1. v13 optimizasyonu (1-2 dk → 20-30 sn)
+- **Çizelge 4.6**: Optimizasyon adımları ve hızlanma
+- 4.8.2. Halk-dostu UI dönüşümü
 - **Şekil 4.5**: Önce/sonra ekran karşılaştırması
 
-**4.8. Tartışma**
-- 4.8.1. 19 karpuzluk veri setinin akademik limiti
-- 4.8.2. ML fusion + fiziksel kural hibrit yaklaşımın avantajı
-- 4.8.3. Mobil dağıtımda doğruluk-performans dengesi
-- 4.8.4. Literatürdeki diğer çalışmalarla karşılaştırma
+**4.9. Tartışma**
+- 4.9.1. 19 karpuzluk veri setinin akademik limiti
+- 4.9.2. ML fusion + fiziksel kural hibrit yaklaşımın avantajı
+- 4.9.3. Mobil dağıtımda doğruluk-performans dengesi
+- 4.9.4. Saha doğrulamasının ön niteliği ve genişletme ihtiyacı
+- 4.9.5. Literatürdeki diğer çalışmalarla karşılaştırma
 
 ---
 
@@ -472,6 +492,7 @@ Tahribatsız test ihtiyacı; mevcut çözümlerin (laboratuvar Brix metresi, aku
 - Halk-dostu UI'nın akademik prototip yerine son kullanıcı kullanımına uygunluğu
 
 **5.2. Öneriler ve Gelecek Çalışmalar**
+- 5.2.0. Kesimle doğrulanmış, dengeli (olgun + ham + içi geçmiş) geniş bir saha kümesiyle sistematik saha doğrulamasının tamamlanması; uygulamanın Geçmiş ekranı üzerinden gerçek-sınıf geri bildirimi toplama mekanizması bu süreci destekler
 - 5.2.1. Daha büyük veri seti (Brix etiketli 100+ karpuz) toplama gerekliliği
 - 5.2.2. Tam NUFFT-OMP SRR mobil implementasyonu (basitleştirilmiş cubic yerine)
 - 5.2.3. Federe öğrenme ile kullanıcı geri bildiriminden anonim model iyileştirme
